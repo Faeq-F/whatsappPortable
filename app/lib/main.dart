@@ -6,13 +6,14 @@ import 'package:webview_windows/webview_windows.dart';
 import 'package:window_manager/window_manager.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
+final _controller = WebviewController();
 
 void main() async {
   // For full-screen example
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
-  windowManager.setTitle("WhatsApp");
-
+  await windowManager.setTitle("WhatsApp");
+  await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
   runApp(const MyApp());
 }
 
@@ -21,11 +22,13 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(navigatorKey: navigatorKey, home: new Scaffold(
-      //Here you can set what ever background color you need.
-      backgroundColor: Colors.white,
-      body: const ExampleBrowser()
-    ), title: 'WhatsApp');
+    return MaterialApp(
+        navigatorKey: navigatorKey,
+        home: const Scaffold(
+            //Here you can set what ever background color you need.
+            backgroundColor: Colors.white,
+            body: ExampleBrowser()),
+        title: 'WhatsApp');
   }
 }
 
@@ -37,10 +40,8 @@ class ExampleBrowser extends StatefulWidget {
 }
 
 class _ExampleBrowser extends State<ExampleBrowser> {
-  final _controller = WebviewController();
   final _textController = TextEditingController();
   final List<StreamSubscription> _subscriptions = [];
-  late bool _isWebviewSuspended = false;
 
   @override
   void initState() {
@@ -49,16 +50,31 @@ class _ExampleBrowser extends State<ExampleBrowser> {
   }
 
   Future<void> initPlatformState() async {
-    // Optionally initialize the webview environment using
-    // a custom user data directory
-    // and/or a custom browser executable directory
-    // and/or custom chromium command line flags
-    //await WebviewController.initializeEnvironment(
-    //    additionalArguments: '--show-fps-counter');
-
     try {
       await _controller.initialize();
-      _controller.addScriptToExecuteOnDocumentCreated('window.onload=function(){document.createElement("style").innerHTML=".app-wrapper-web ._aigs {top: 0 !important;width: 100vw !important;height: 100vh !important;max-width: 100vw !important;margin: 0 !important;box-shadow: 0 !important;}"};"');
+
+      // The Whatsapp web site has useless space around the app - this removes it
+      // also adds styles that make the site look cleaner
+      var expandScript = '''
+                          window.onload = function () {
+                            var style = document.createElement("style");
+                            style.innerHTML =
+                              ".app-wrapper-web ._aigs {" +
+                              "top: 0 !important;" +
+                              "width: 100vw !important;" +
+                              "height: 100vh !important;" +
+                              "max-width: 100vw !important;" +
+                              "margin: 0 !important;" +
+                              "box-shadow: 0 !important;" +
+                              "}"+
+                              "._al_d{"+
+                              "display: none !important;"+
+                              "}";
+                            var ref = document.querySelector("script");
+                            ref.parentNode.insertBefore(style, ref);
+                          };
+                          ''';
+      _controller.addScriptToExecuteOnDocumentCreated(expandScript);
 
       _subscriptions.add(_controller.url.listen((url) {
         _textController.text = url;
@@ -118,28 +134,12 @@ class _ExampleBrowser extends State<ExampleBrowser> {
         child: Column(
           children: [
             Card(
-              color: Colors.white,
-              elevation: 0,
-              child: Row(children: [
-                Text("  WhatsApp "),
-                Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.refresh),
-                  splashRadius: 20,
-                  onPressed: () {
-                    _controller.reload();
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.developer_mode),
-                  tooltip: 'Open DevTools',
-                  splashRadius: 20,
-                  onPressed: () {
-                    _controller.openDevTools();
-                  },
-                )
-              ]),
-            ),
+                color: Colors.white,
+                elevation: 0,
+                child: new DraggableAppBar(
+                    title: "WhatsApp",
+                    brightness: Brightness.light,
+                    backgroundColor: Colors.white)),
             Expanded(
                 child: Card(
                     color: Colors.transparent,
@@ -168,9 +168,11 @@ class _ExampleBrowser extends State<ExampleBrowser> {
       );
     }
   }
+
   @override
   Widget build(BuildContext context) {
-    return new SafeArea(child: Center(
+    return SafeArea(
+      child: Center(
         child: compositeView(),
       ),
     );
@@ -209,4 +211,80 @@ class _ExampleBrowser extends State<ExampleBrowser> {
     _controller.dispose();
     super.dispose();
   }
+}
+
+class DraggableAppBar extends StatelessWidget implements PreferredSizeWidget {
+  final String title;
+  final Brightness brightness;
+  final Color backgroundColor;
+
+  const DraggableAppBar({
+    super.key,
+    required this.title,
+    required this.brightness,
+    required this.backgroundColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Row(children: [
+              SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: IconButton(
+                    icon: const Icon(Icons.developer_mode),
+                    tooltip: 'Open DevTools',
+                    iconSize: 15,
+                    splashRadius: 20,
+                    onPressed: () {
+                      _controller.openDevTools();
+                    },
+                  )),
+              SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: IconButton(
+                    icon: const Icon(Icons.refresh),
+                    tooltip: 'Refresh',
+                    iconSize: 15,
+                    splashRadius: 20,
+                    onPressed: () {
+                      _controller.reload();
+                    },
+                  ))
+            ])),
+        getAppBarTitle(title),
+        Align(
+          alignment: AlignmentDirectional.centerEnd,
+          child: SizedBox(
+            height: 20,
+            width: 200,
+            child: WindowCaption(
+              backgroundColor: backgroundColor,
+              brightness: brightness,
+            ),
+          ),
+        )
+      ],
+    );
+  }
+
+  Widget getAppBarTitle(String title) {
+    return DragToMoveArea(
+      child: SizedBox(
+        height: 20,
+        child: Align(
+          alignment: AlignmentDirectional.center,
+          child: Text(title),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Size get preferredSize => const Size.fromHeight(20);
 }
