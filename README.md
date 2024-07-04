@@ -10,5 +10,6 @@ The [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webv
 <br>
 <hr>
 <br>
+
 ## Why?
 I use a Gecko-based browser, the kind that WhatsApp Web seems to have a lot of trouble working with. I do not want to use other browsers and do not wish to use an installed desktop app. Other portable applications like [WhatsApp™ portable from portapps](https://portapps.io/app/whatsapp-portable/) have known [issues](https://github.com/portapps/whatsapp-portable/issues/64), preventing them from being useable.
