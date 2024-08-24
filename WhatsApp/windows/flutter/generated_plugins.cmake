@@ -3,8 +3,9 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  fullscreen_window
   screen_retriever
-  webview_windows
+  webview_win_floating
   window_manager
 )
 
