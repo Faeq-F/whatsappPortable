@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:webview_win_floating/webview_win_floating.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:tray_manager/tray_manager.dart';
+import 'dart:async';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 final controller = WinWebViewController();
@@ -10,11 +12,55 @@ void main() async {
   await windowManager.ensureInitialized();
   await windowManager.setTitle("WhatsApp");
   await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
-  runApp(const WhatsApp());
+  await windowManager.setPreventClose(true);
+  runApp(WhatsApp());
 }
 
-class WhatsApp extends StatelessWidget {
-  const WhatsApp({super.key});
+class WhatsApp extends StatelessWidget with TrayListener {
+  WhatsApp({super.key}) {
+    createTrayTask();
+    trayManager.addListener(this);
+  }
+
+  @override
+  void onTrayIconMouseDown() async {
+    await toggleWindow();
+  }
+
+  @override
+  void onTrayIconRightMouseDown() {
+    trayManager.popUpContextMenu();
+  }
+
+  Future<void> toggleWindow() async {
+    if (await windowManager.isVisible()) {
+      await windowManager.hide();
+    } else {
+      await windowManager.show();
+    }
+  }
+
+  Future<void> createTrayTask() async {
+    String iconPath = '../icon.ico';
+    await trayManager.setIcon(iconPath);
+    await trayManager.setToolTip('WhatsApp');
+    Menu menu = Menu(
+      items: [
+        MenuItem(
+            label: 'Toggle Window',
+            onClick: (MenuItem item) async {
+              await toggleWindow();
+            }),
+        MenuItem.separator(),
+        MenuItem(
+            label: 'Exit',
+            onClick: (MenuItem item) {
+              print("close app now");
+            })
+      ],
+    );
+    await trayManager.setContextMenu(menu);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,11 +81,26 @@ class Browser extends StatefulWidget {
   State<Browser> createState() => _Browser();
 }
 
-class _Browser extends State<Browser> {
+class _Browser extends State<Browser> with WindowListener {
+  @override
+  void dispose() {
+    windowManager.removeListener(this);
+    super.dispose();
+  }
+
+  @override
+  void onWindowClose() async {
+    bool _isPreventClose = await windowManager.isPreventClose();
+    if (_isPreventClose) {
+      await windowManager.hide();
+    }
+  }
+
   final urlController = TextEditingController();
 
   @override
   void initState() {
+    windowManager.addListener(this);
     super.initState();
     controller.loadRequest(Uri.parse("https://web.whatsapp.com/"));
     controller.runJavaScript("""
