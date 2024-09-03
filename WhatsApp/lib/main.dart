@@ -1,30 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:webview_win_floating/webview_win_floating.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_phoenix/flutter_phoenix.dart';
+import 'package:process_run/process_run.dart';
 import 'dart:async';
 import 'dart:io';
 
 final navigatorKey = GlobalKey<NavigatorState>();
-WinWebViewController? controller;
+WinWebViewController controller = WinWebViewController();
 
 SharedPreferences? appPrefs;
 
 enum Theme { dark, light }
 
 Theme theme = Theme.dark;
-BuildContext? appContext;
 
 Future<void> runCustomJS() async {
-  controller = null;
-  controller = WinWebViewController();
-  await controller!.loadRequest(Uri.parse("https://web.whatsapp.com/"));
+  await controller.loadRequest_("https://web.whatsapp.com/");
   if (theme == Theme.light) {
-    await controller!.runJavaScript("""
-      window.onload = function () {
+    await controller.runJavaScript("""
+      window.onload = () => {
         var style = document.createElement("style");
         style.innerHTML =
 
@@ -54,11 +50,13 @@ Future<void> runCustomJS() async {
           "}";
         var ref = document.querySelector("script");
         ref.parentNode.insertBefore(style, ref);
-      };
+        document.getElementsByTagName("body")[0].classList = [""];
+        console.log("ran");
+      }
     """);
   } else {
-    await controller!.runJavaScript("""
-      window.onload = function () {
+    await controller.runJavaScript("""
+      window.onload = () => {
         var style = document.createElement("style");
         style.innerHTML =
 
@@ -88,7 +86,9 @@ Future<void> runCustomJS() async {
           "}";
         var ref = document.querySelector("script");
         ref.parentNode.insertBefore(style, ref);
-      };
+        document.getElementsByTagName("body")[0].classList = ["dark"];
+        console.log("ran");
+      }
     """);
   }
 }
@@ -96,15 +96,22 @@ Future<void> runCustomJS() async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   appPrefs = await SharedPreferences.getInstance();
+  String? savedTheme = appPrefs!.getString('theme');
+  if (savedTheme != null) {
+    if (savedTheme == "Theme.light") {
+      theme = Theme.light;
+    } else {
+      theme = Theme.dark;
+    }
+  } else {
+    theme = Theme.dark;
+  }
+  await appPrefs!.setString('theme', theme.toString());
   await windowManager.ensureInitialized();
   await windowManager.setTitle("WhatsApp");
   await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
   await windowManager.setPreventClose(true);
-  runApp(
-    Phoenix(
-      child: WhatsApp(),
-    ),
-  );
+  runApp(WhatsApp());
 }
 
 class WhatsApp extends StatelessWidget with TrayListener {
@@ -132,7 +139,7 @@ class WhatsApp extends StatelessWidget with TrayListener {
   }
 
   Future<void> createTrayTask() async {
-    String iconPath = './icon.ico';
+    String iconPath = 'images/icon.ico';
     await trayManager.setIcon(iconPath);
     await trayManager.setToolTip('WhatsApp');
     Menu menu = Menu(
@@ -155,7 +162,6 @@ class WhatsApp extends StatelessWidget with TrayListener {
 
   @override
   Widget build(BuildContext context) {
-    appContext = context;
     return MaterialApp(
         navigatorKey: navigatorKey,
         home: Scaffold(
@@ -187,8 +193,6 @@ class _Browser extends State<Browser> with WindowListener {
       await windowManager.hide();
     }
   }
-
-  final urlController = TextEditingController();
 
   @override
   void initState() {
@@ -222,7 +226,7 @@ class _Browser extends State<Browser> with WindowListener {
                     elevation: 0,
                     clipBehavior: Clip.antiAliasWithSaveLayer,
                     child: Stack(
-                      children: [WinWebViewWidget(controller: controller!)],
+                      children: [WinWebViewWidget(controller: controller)],
                     ))),
           ],
         ),
@@ -243,7 +247,7 @@ class DraggableAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.backgroundColor,
   });
 
-  void toggleTheme() async {
+  Future<void> toggleTheme() async {
     String? savedTheme = appPrefs!.getString('theme');
     if (savedTheme != null) {
       if (savedTheme == "Theme.light") {
@@ -255,11 +259,8 @@ class DraggableAppBar extends StatelessWidget implements PreferredSizeWidget {
       theme = Theme.dark;
     }
     await appPrefs!.setString('theme', theme.toString());
-    await runCustomJS();
-    if (appContext!.mounted) {
-      Phoenix.rebirth(appContext!);
-    }
-    print(theme);
+    var shell = Shell();
+    await shell.run("powershell.exe scripts/restartApp.ps1");
   }
 
   @override
@@ -280,7 +281,7 @@ class DraggableAppBar extends StatelessWidget implements PreferredSizeWidget {
                     tooltip: 'Open DevTools',
                     iconSize: 15,
                     onPressed: () {
-                      controller!.openDevTools();
+                      controller.openDevTools();
                     },
                   )),
               SizedBox(
@@ -293,8 +294,8 @@ class DraggableAppBar extends StatelessWidget implements PreferredSizeWidget {
                     icon: const Icon(Icons.lightbulb_outlined),
                     tooltip: 'Change Theme',
                     iconSize: 15,
-                    onPressed: () {
-                      toggleTheme();
+                    onPressed: () async {
+                      await toggleTheme();
                     },
                   )),
             ])),
@@ -320,7 +321,10 @@ class DraggableAppBar extends StatelessWidget implements PreferredSizeWidget {
         height: 20,
         child: Align(
           alignment: AlignmentDirectional.center,
-          child: Text(title),
+          child: Text(title,
+              style: TextStyle(
+                color: (theme == Theme.light) ? Colors.black : Colors.white,
+              )),
         ),
       ),
     );
