@@ -51,7 +51,6 @@ Future<void> runCustomJS() async {
         var ref = document.querySelector("script");
         ref.parentNode.insertBefore(style, ref);
         document.getElementsByTagName("body")[0].classList = [""];
-        console.log("ran");
       }
     """);
   } else {
@@ -87,7 +86,6 @@ Future<void> runCustomJS() async {
         var ref = document.querySelector("script");
         ref.parentNode.insertBefore(style, ref);
         document.getElementsByTagName("body")[0].classList = ["dark"];
-        console.log("ran");
       }
     """);
   }

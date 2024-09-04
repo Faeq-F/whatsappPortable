@@ -5,7 +5,9 @@ The [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webv
 <hr>
 <br>
 
-![App Screenshot](https://raw.githubusercontent.com/Faeq-F/whatsappPortable/main/Screenshot.png)
+![App Screenshot in light mode](https://raw.githubusercontent.com/Faeq-F/whatsappPortable/main/Screenshot.png)
+
+![App Screenshot in dark mode](https://raw.githubusercontent.com/Faeq-F/whatsappPortable/main/ScreenshotDark.png)
 
 <br>
 <hr>
