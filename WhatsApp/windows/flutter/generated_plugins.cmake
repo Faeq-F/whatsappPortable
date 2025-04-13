@@ -6,6 +6,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   fullscreen_window
   screen_retriever
   tray_manager
+  url_launcher_windows
   webview_win_floating
   window_manager
 )
