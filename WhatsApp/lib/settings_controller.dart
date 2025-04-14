@@ -19,13 +19,8 @@ class SettingsController with ChangeNotifier {
   }
 
   /// Update and persist the ThemeMode based on the user's selection.
-  Future<void> updateThemeMode() async {
-    switch (_themeMode) {
-      case ThemeMode.light:
-        _themeMode = ThemeMode.dark;
-      default: // if themeMode is system, user will have to click twice!
-        _themeMode = ThemeMode.light;
-    }
+  Future<void> updateThemeMode(newThemeMode) async {
+    _themeMode = newThemeMode;
     notifyListeners();
     _settingsService.themeMode = _themeMode;
   }

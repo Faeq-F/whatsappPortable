@@ -11,8 +11,12 @@ class DraggableAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.settingsController,
   });
 
-  Future<void> toggleTheme() async {
-    settingsController.updateThemeMode();
+  Future<void> toggleTheme(currentBrightness) async {
+    if (currentBrightness == Brightness.light) {
+      settingsController.updateThemeMode(ThemeMode.dark);
+    } else {
+      settingsController.updateThemeMode(ThemeMode.light);
+    }
     constants.browserController.reload();
   }
 
@@ -27,9 +31,7 @@ class DraggableAppBar extends StatelessWidget implements PreferredSizeWidget {
                   height: 20,
                   width: 20,
                   child: IconButton(
-                    color: (Theme.of(context).brightness == Brightness.light
-                        ? Colors.black54
-                        : Colors.white60),
+                    color: Theme.of(context).hintColor,
                     icon: const Icon(Icons.developer_mode),
                     tooltip: 'Open DevTools',
                     iconSize: 15,
@@ -41,14 +43,12 @@ class DraggableAppBar extends StatelessWidget implements PreferredSizeWidget {
                   height: 20,
                   width: 20,
                   child: IconButton(
-                    color: (Theme.of(context).brightness == Brightness.light
-                        ? Colors.black54
-                        : Colors.white60),
+                    color: Theme.of(context).hintColor,
                     icon: const Icon(Icons.lightbulb_outlined),
                     tooltip: 'Change Theme',
                     iconSize: 15,
                     onPressed: () async {
-                      await toggleTheme();
+                      await toggleTheme(Theme.of(context).brightness);
                     },
                   )),
             ])),
@@ -60,9 +60,7 @@ class DraggableAppBar extends StatelessWidget implements PreferredSizeWidget {
               alignment: AlignmentDirectional.center,
               child: Text("WhatsApp",
                   style: TextStyle(
-                    color: (Theme.of(context).brightness == Brightness.light
-                        ? Colors.black
-                        : Colors.white),
+                    color: Theme.of(context).iconTheme.color,
                   )),
             ),
           ),
@@ -73,9 +71,7 @@ class DraggableAppBar extends StatelessWidget implements PreferredSizeWidget {
             height: 20,
             width: 200,
             child: WindowCaption(
-              backgroundColor: (Theme.of(context).brightness == Brightness.light
-                  ? Colors.white
-                  : Colors.black),
+              backgroundColor: Theme.of(context).canvasColor,
               brightness: Theme.of(context).brightness,
             ),
           ),

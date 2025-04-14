@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+// data saved in AppData roaming dir! - just theme, should be fine for now
 import 'package:shared_preferences/shared_preferences.dart';
 
 const String _kThemeMode = 'theme_mode';
