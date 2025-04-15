@@ -1,8 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_win_floating/webview_win_floating.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
-WinWebViewController browserController = WinWebViewController();
+WebViewController browserController =
+    WebViewController(onPermissionRequest: (request) {
+  var req = request.platform as WinWebViewPermissionRequest;
+  // only allow "notification", deny all others
+  if (req.kind == WinWebViewPermissionResourceType.notification) {
+    req.grant();
+  } else {
+    req.deny();
+  }
+  debugPrint("permission: ${req.kind} , ${req.url}");
+});
 
 final ThemeData lightTheme = ThemeData(
     brightness: Brightness.light,

@@ -36,7 +36,7 @@ class DraggableAppBar extends StatelessWidget implements PreferredSizeWidget {
                     tooltip: 'Open DevTools',
                     iconSize: 15,
                     onPressed: () {
-                      constants.browserController.openDevTools();
+                      //constants.browserController..openDevTools();
                     },
                   )),
               SizedBox(

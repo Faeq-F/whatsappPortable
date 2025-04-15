@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import 'package:webview_win_floating/webview_win_floating.dart';
 import 'package:whatsapp/settings_controller.dart';
 import 'package:whatsapp/top_bar.dart';
 import 'package:window_manager/window_manager.dart';
@@ -34,7 +33,8 @@ class _Browser extends State<Browser> with WindowListener {
   void initState() {
     windowManager.addListener(this);
     super.initState();
-    constants.browserController.setNavigationDelegate(WinNavigationDelegate(
+
+    constants.browserController.setNavigationDelegate(NavigationDelegate(
       onNavigationRequest: (request) {
         var launch = NavigationDecision.navigate;
         if (!request.url.contains("whatsapp")) {
@@ -52,7 +52,8 @@ class _Browser extends State<Browser> with WindowListener {
       onWebResourceError: (error) =>
           debugPrint("onWebResourceError: ${error.description}"),
     ));
-    constants.browserController.loadRequest_("https://web.whatsapp.com/");
+    constants.browserController.loadRequest(Uri.parse(
+        "https://web.whatsapp.com/")); //.loadRequest_("https://web.whatsapp.com/");
   }
 
   @override
@@ -76,8 +77,7 @@ class _Browser extends State<Browser> with WindowListener {
                     clipBehavior: Clip.antiAliasWithSaveLayer,
                     child: Stack(
                       children: [
-                        WinWebViewWidget(
-                            controller: constants.browserController)
+                        WebViewWidget(controller: constants.browserController)
                       ],
                     ))),
           ],
