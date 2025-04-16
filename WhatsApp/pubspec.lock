@@ -78,6 +78,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
+  flutter_platform_alert:
+    dependency: "direct main"
+    description:
+      name: flutter_platform_alert
+      sha256: c4b509956346ce9666512b700354de4c6f8fdff94cd47c12368e4a6b1c25a02c
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.7.0"
   flutter_test:
     dependency: "direct dev"
     description: flutter

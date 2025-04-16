@@ -9,6 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_platform_alert: ^0.7.0
   get_it: ^8.0.3
   shared_preferences: ^2.3.2
   tray_manager: ^0.2.3

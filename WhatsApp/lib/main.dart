@@ -1,21 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:whatsapp/browser.dart';
 import 'package:whatsapp/settings_controller.dart';
-import 'package:whatsapp/settings_service.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'dart:async';
 import 'dart:io';
-import 'package:get_it/get_it.dart';
 import 'constants.dart' as constants;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  //Register Services
-  final settingsService = await SettingsService.getInstance();
-  GetIt.I.registerSingleton<SettingsService>(settingsService);
-  final settingsController = SettingsController(settingsService);
+  final settingsController = SettingsController();
 
   await settingsController.loadSettings();
   await windowManager.ensureInitialized();

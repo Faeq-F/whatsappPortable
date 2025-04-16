@@ -3,6 +3,7 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  flutter_platform_alert
   fullscreen_window
   screen_retriever
   tray_manager
