@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:whatsapp/settings_controller.dart';
+import 'package:webview_win_floating/webview_win_floating.dart';
 import 'package:window_manager/window_manager.dart';
 import 'constants.dart' as constants;
 
@@ -36,7 +37,9 @@ class DraggableAppBar extends StatelessWidget implements PreferredSizeWidget {
                     tooltip: 'Open DevTools',
                     iconSize: 15,
                     onPressed: () {
-                      //constants.browserController..openDevTools();
+                      (constants.browserController.platform
+                              as WindowsPlatformWebViewController)
+                          .openDevTools();
                     },
                   )),
               SizedBox(

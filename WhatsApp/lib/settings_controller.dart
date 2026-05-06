@@ -22,20 +22,33 @@ class SettingsController with ChangeNotifier {
   Future<void> loadSettings() async {
     final file = await _settingsFile;
     final contents = await file.readAsString();
+
     //handle decode error - overwrite file
-    final settings = jsonDecode(contents) as Map<String, dynamic>;
-    debugPrint(contents[0]);
-    // if (contents['theme'] == "")
-    // _themeMode = ;
+    if (contents.isEmpty) {
+      _themeMode = ThemeMode.system;
+    } else {
+      final settings = jsonDecode(contents) as Map<String, dynamic>;
+      final themeString = settings['theme'] as String? ?? 'ThemeMode.system';
+
+      switch (themeString) {
+        case 'ThemeMode.light':
+          _themeMode = ThemeMode.light;
+          break;
+        case 'ThemeMode.dark':
+          _themeMode = ThemeMode.dark;
+          break;
+        default:
+          _themeMode = ThemeMode.system;
+          break;
+      }
+    }
     notifyListeners();
   }
 
   /// Update and persist the ThemeMode based on the user's selection.
   Future<void> updateThemeMode(newThemeMode) async {
     final file = await _settingsFile;
-    file.writeAsString(json.encode([
-      {"theme": newThemeMode.toString()}
-    ]));
+    file.writeAsString(json.encode({"theme": newThemeMode.toString()}));
     _themeMode = newThemeMode;
     notifyListeners();
   }
