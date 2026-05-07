@@ -11,11 +11,13 @@ dependencies:
     sdk: flutter
   flutter_platform_alert: ^0.7.0
   get_it: ^8.0.3
+  path: ^1.8.0
   shared_preferences: ^2.3.2
   tray_manager: ^0.2.3
   url_launcher: ^6.3.1
   webview_flutter: ^4.8.0
-  webview_win_floating: ^2.3.0
+  webview_win_floating:
+    path: ./packages/webview_win_floating
   window_manager: ^0.3.9
 
 dev_dependencies:

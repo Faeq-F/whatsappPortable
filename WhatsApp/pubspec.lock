@@ -177,7 +177,7 @@ packages:
     source: hosted
     version: "1.12.0"
   path:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: path
       sha256: "087ce49c3f0dc39180befefc60fdb4acd8f8620e5682fe2476afd0b3688bb4af"
@@ -480,11 +480,10 @@ packages:
   webview_win_floating:
     dependency: "direct main"
     description:
-      name: webview_win_floating
-      sha256: "5432b18aec12ad1e3471207dcd249078e423ef0e989c28b4aecd13c6f26e0f97"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.3.2"
+      path: "C:\\dev\\webview_win_floating_pr"
+      relative: false
+    source: path
+    version: "3.0.2"
   window_manager:
     dependency: "direct main"
     description:

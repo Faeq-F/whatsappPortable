@@ -1,26 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:webview_flutter/webview_flutter.dart';
-import 'package:webview_win_floating/webview_win_floating.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
-WebViewController browserController =
-    WebViewController(onPermissionRequest: (request) {
-  var req = request.platform as WinWebViewPermissionRequest;
-  // only allow "notification", deny all others
-  if (req.kind == WinWebViewPermissionResourceType.notification) {
-    req.grant();
-  } else {
-    req.deny();
-  }
-  debugPrint("permission: ${req.kind} , ${req.url}");
-});
 
 final ThemeData lightTheme = ThemeData(
     brightness: Brightness.light,
     inputDecorationTheme: InputDecorationTheme(fillColor: Colors.grey.shade300),
     canvasColor: Colors.white,
     cardColor: Colors.white,
-    primaryColor: Colors.red,
+    primaryColor: Colors.green,
     hintColor: Colors.black54,
     scaffoldBackgroundColor: Colors.white,
     appBarTheme: const AppBarTheme(backgroundColor: Colors.white),
@@ -36,7 +23,7 @@ final ThemeData darkTheme = ThemeData(
     inputDecorationTheme: InputDecorationTheme(fillColor: Colors.grey.shade900),
     canvasColor: Colors.black,
     cardColor: Colors.black,
-    primaryColor: Colors.red,
+    primaryColor: Colors.green,
     hintColor: Colors.white60,
     dialogBackgroundColor: Colors.black,
     scaffoldBackgroundColor: Colors.black,
