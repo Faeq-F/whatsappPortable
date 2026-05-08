@@ -17,7 +17,7 @@ dependencies:
   url_launcher: ^6.3.1
   webview_flutter: ^4.8.0
   webview_win_floating:
-    path: ./packages/webview_win_floating
+    path: C:/dev/webview_win_floating_pr
   window_manager: ^0.3.9
 
 dev_dependencies:

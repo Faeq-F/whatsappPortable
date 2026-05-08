@@ -10,15 +10,16 @@ import 'package:whatsapp/settings_controller.dart';
 class WhatsAppAccount {
   final String id;
   String name;
-  final String dataDirectory;
   WebViewController? _webViewController;
   bool isActive;
   bool _webViewSetupDone = false;
 
+  /// Shared data directory for all accounts. WebView2 profiles handle isolation.
+  static String get sharedDataDirectory => '${Directory.current.path}\\data\\webview';
+
   WhatsAppAccount({
     required this.id,
     required this.name,
-    required this.dataDirectory,
     this.isActive = false,
   });
 
@@ -33,7 +34,6 @@ class WhatsAppAccount {
     return {
       'id': id,
       'name': name,
-      'dataDirectory': dataDirectory,
       'isActive': isActive,
     };
   }
@@ -42,7 +42,6 @@ class WhatsAppAccount {
     return WhatsAppAccount(
       id: json['id'],
       name: json['name'],
-      dataDirectory: json['dataDirectory'],
       isActive: json['isActive'] ?? false,
     );
   }
@@ -52,10 +51,10 @@ class WhatsAppAccount {
       debugPrint('webViewController already initialized for account $id, skipping');
       return;
     }
-    final normalizedPath = dataDirectory;
-    debugPrint("Initializing WebViewController with userDataFolder: $normalizedPath");
+    debugPrint("Initializing WebViewController with profileName: $id");
     final params = WindowsPlatformWebViewControllerCreationParams(
-      userDataFolder: normalizedPath,
+      userDataFolder: sharedDataDirectory,
+      profileName: id,
     );
     _webViewController = WebViewController.fromPlatformCreationParams(
       params,
@@ -73,12 +72,11 @@ class WhatsAppAccount {
     debugPrint('webViewController initialized for account $id');
   }
 
-  Future<void> setupWebViewDataDirectory() async {
-    final directory = Directory(dataDirectory);
+  Future<void> ensureSharedDataDirectory() async {
+    final directory = Directory(sharedDataDirectory);
     if (!await directory.exists()) {
       await directory.create(recursive: true);
     }
-    debugPrint("Account data directory created: $dataDirectory");
   }
 
   void setupWebView(SettingsController settingsController) {
@@ -162,7 +160,7 @@ class AccountManager with ChangeNotifier {
       // Initialize webview controllers for all accounts
       for (var account in _accounts) {
         account.initializeWebViewController();
-        await account.setupWebViewDataDirectory();
+        await account.ensureSharedDataDirectory();
         account.setupWebView(settingsController);
       }
 
@@ -183,11 +181,10 @@ class AccountManager with ChangeNotifier {
     final defaultAccount = WhatsAppAccount(
       id: 'account_1',
       name: 'Account 1',
-      dataDirectory: '${Directory.current.path}\\data\\account_1',
     );
 
     defaultAccount.initializeWebViewController();
-    await defaultAccount.setupWebViewDataDirectory();
+    await defaultAccount.ensureSharedDataDirectory();
     defaultAccount.setupWebView(settingsController);
 
     _accounts = [defaultAccount];
@@ -207,16 +204,14 @@ class AccountManager with ChangeNotifier {
   Future<void> addAccount({String? name}) async {
     final accountId = 'account_${DateTime.now().millisecondsSinceEpoch}';
     final accountName = name ?? 'Account ${_accounts.length + 1}';
-    final dataDirectory = '${Directory.current.path}\\data\\$accountId';
 
     final newAccount = WhatsAppAccount(
       id: accountId,
       name: accountName,
-      dataDirectory: dataDirectory,
     );
 
     newAccount.initializeWebViewController();
-    await newAccount.setupWebViewDataDirectory();
+    await newAccount.ensureSharedDataDirectory();
     newAccount.setupWebView(settingsController);
 
     _accounts.add(newAccount);
@@ -259,14 +254,15 @@ class AccountManager with ChangeNotifier {
     // 3. Give Windows a moment to fully release the file handles
     await Future.delayed(const Duration(milliseconds: 500));
 
-    // 4. Clean up data directory
+    // 4. Clean up profile directory
     try {
-      final directory = Directory(accountToRemove.dataDirectory);
-      if (await directory.exists()) {
-        await directory.delete(recursive: true);
+      final profileDir = Directory('${WhatsAppAccount.sharedDataDirectory}\\EBWebView\\WV2Profile_$accountId');
+      if (await profileDir.exists()) {
+        await profileDir.delete(recursive: true);
+        debugPrint('Deleted profile directory for account $accountId');
       }
     } catch (e) {
-      debugPrint('Error deleting account data directory: $e');
+      debugPrint('Error deleting profile directory for account $accountId: $e');
     }
 
     await saveAccounts();
