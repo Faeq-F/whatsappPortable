@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:whatsapp/browser.dart';
-import 'package:whatsapp/settings_controller.dart';
+import 'package:whatsapp/ui/browser.dart';
+import 'package:whatsapp/manager/settings_controller.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:tray_manager/tray_manager.dart';
-import 'dart:async';
 import 'dart:io';
 import 'constants.dart' as constants;
 
@@ -81,9 +80,8 @@ class WhatsApp extends StatelessWidget with TrayListener {
               debugShowCheckedModeBanner: false,
               restorationScopeId: 'app',
               supportedLocales: const [
-                Locale('en', ''), // English, no country code
+                Locale('en', ''),
               ],
-              //themes defined
               theme: constants.lightTheme,
               darkTheme: constants.darkTheme,
               themeMode: settingsController.themeMode,

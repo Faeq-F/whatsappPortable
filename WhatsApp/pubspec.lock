@@ -480,10 +480,11 @@ packages:
   webview_win_floating:
     dependency: "direct main"
     description:
-      path: "C:\\dev\\webview_win_floating_pr"
-      relative: false
-    source: path
-    version: "3.0.2"
+      name: webview_win_floating
+      sha256: "40b4f6c66554d3eb9c486952b5c072e2478f9471f64e6d63e92ddc4e527b7aa8"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.3"
   window_manager:
     dependency: "direct main"
     description:

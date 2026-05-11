@@ -1,1 +1,5 @@
-{"theme":"ThemeMode.light"}
+{
+  "theme": "ThemeMode.system",
+  "alwaysShowTabBar": true,
+  "accounts": []
+}
