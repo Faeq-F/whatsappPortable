@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_win_floating/webview_win_floating.dart';
@@ -12,6 +13,7 @@ class WhatsAppAccount {
   WebViewController? _webViewController;
   bool isActive;
   bool _webViewSetupDone = false;
+  bool hasNotification = false;
 
   static String get sharedDataDirectory =>
       '${Directory.current.path}\\data\\webview';
@@ -82,11 +84,39 @@ class WhatsAppAccount {
     }
   }
 
-  void setupWebView(SettingsController settingsController) {
+  void setupWebView(
+    SettingsController settingsController, {
+    Function(String accountId, bool hasNotification)? onNotificationChanged,
+  }) {
     if (_webViewSetupDone) {
       debugPrint('webView already set up for account $id, skipping');
       return;
     }
+
+    // Register a JavaScript channel to receive notification events
+    _webViewController!.addJavaScriptChannel(
+      'NotificationChannel',
+      onMessageReceived: (JavaScriptMessage message) {
+        try {
+          final data = jsonDecode(message.message) as Map<String, dynamic>;
+          final type = data['type'] as String;
+          final remainingCount = data['remainingCount'] as int? ?? 0;
+
+          if (type == 'NOTIFICATION_RECEIVED') {
+            hasNotification = true;
+            debugPrint('Notification received on account $id: ${data['title']}');
+            onNotificationChanged?.call(id, true);
+          } else if (type == 'NOTIFICATION_CLOSED') {
+            hasNotification = remainingCount > 0;
+            debugPrint('Notification closed on account $id, remaining: $remainingCount');
+            onNotificationChanged?.call(id, hasNotification);
+          }
+        } catch (e) {
+          debugPrint('Error parsing notification message: $e');
+        }
+      },
+    );
+
     _webViewController!.setNavigationDelegate(NavigationDelegate(
       onNavigationRequest: (request) {
         var launch = NavigationDecision.navigate;
@@ -107,6 +137,9 @@ class WhatsAppAccount {
         } else {
           _webViewController!.runJavaScript(constants.darkModeJS);
         }
+
+        // Inject notification override script
+        _webViewController!.runJavaScript(constants.notificationOverrideJS);
       },
       onWebResourceError: (error) =>
           debugPrint("onWebResourceError: ${error.description}"),

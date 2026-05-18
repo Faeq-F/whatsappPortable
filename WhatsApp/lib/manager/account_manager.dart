@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:webview_win_floating/webview_win_floating.dart';
+import 'package:tray_manager/tray_manager.dart';
 import 'dart:io';
 import 'package:whatsapp/manager/settings_controller.dart';
 import 'package:whatsapp/model/account.dart';
@@ -12,6 +13,10 @@ class AccountManager with ChangeNotifier {
   List<WhatsAppAccount> _accounts = [];
   WhatsAppAccount? _currentAccount;
   bool _isDialogOpen = false;
+  bool _hasAnyNotification = false;
+
+  static const String _normalIconPath = 'images/icon.ico';
+  static const String _notificationIconPath = 'images/icon_notification.ico';
 
   List<WhatsAppAccount> get accounts => _accounts;
   WhatsAppAccount? get currentAccount => _currentAccount;
@@ -42,7 +47,10 @@ class AccountManager with ChangeNotifier {
       for (var account in _accounts) {
         account.initializeWebViewController();
         await account.ensureSharedDataDirectory();
-        account.setupWebView(settingsController);
+        account.setupWebView(
+          settingsController,
+          onNotificationChanged: _onNotificationChanged,
+        );
       }
 
       if (_currentAccount == null && _accounts.isNotEmpty) {
@@ -68,7 +76,10 @@ class AccountManager with ChangeNotifier {
 
     defaultAccount.initializeWebViewController();
     await defaultAccount.ensureSharedDataDirectory();
-    defaultAccount.setupWebView(settingsController);
+    defaultAccount.setupWebView(
+      settingsController,
+      onNotificationChanged: _onNotificationChanged,
+    );
 
     _accounts = [defaultAccount];
     _currentAccount = defaultAccount;
@@ -95,7 +106,10 @@ class AccountManager with ChangeNotifier {
 
     newAccount.initializeWebViewController();
     await newAccount.ensureSharedDataDirectory();
-    newAccount.setupWebView(settingsController);
+    newAccount.setupWebView(
+      settingsController,
+      onNotificationChanged: _onNotificationChanged,
+    );
 
     _accounts.add(newAccount);
     await saveAccounts();
@@ -166,5 +180,28 @@ class AccountManager with ChangeNotifier {
     account.name = newName;
     await saveAccounts();
     notifyListeners();
+  }
+
+  /// Callback invoked by each account's WebView when notification state changes.
+  void _onNotificationChanged(String accountId, bool hasNotification) {
+    final anyHasNotification =
+        _accounts.any((account) => account.hasNotification);
+
+    if (anyHasNotification != _hasAnyNotification) {
+      _hasAnyNotification = anyHasNotification;
+      _updateTrayIcon();
+    }
+  }
+
+  /// Updates the system tray icon based on the current notification state.
+  Future<void> _updateTrayIcon() async {
+    final iconPath =
+        _hasAnyNotification ? _notificationIconPath : _normalIconPath;
+    try {
+      await trayManager.setIcon(iconPath);
+      debugPrint('Tray icon updated: $iconPath');
+    } catch (e) {
+      debugPrint('Error updating tray icon: $e');
+    }
   }
 }

@@ -100,3 +100,63 @@ String removeDownloadForWindows = """
       "display: none;"+
   "}"+
 """;
+
+/// JavaScript to override the browser Notification API.
+/// Intercepts notification creation and close events, and posts messages
+/// back to Flutter via the NotificationChannel JS channel.
+String notificationOverrideJS = """
+(function() {
+  if (window.__notificationOverrideInstalled) return;
+  window.__notificationOverrideInstalled = true;
+
+  window.activeNotifications = new Set();
+
+  function CustomNotification(title, options) {
+    this.title = title;
+    this.options = options || {};
+    this.id = Math.random().toString(36).substring(2, 9);
+    window.activeNotifications.add(this.id);
+
+    try {
+      NotificationChannel.postMessage(JSON.stringify({
+        type: 'NOTIFICATION_RECEIVED',
+        id: this.id,
+        title: this.title,
+        body: this.options.body || '',
+        remainingCount: window.activeNotifications.size
+      }));
+    } catch(e) {}
+
+    var self = this;
+    this.close = function() {
+      if (window.activeNotifications.has(self.id)) {
+        window.activeNotifications.delete(self.id);
+        try {
+          NotificationChannel.postMessage(JSON.stringify({
+            type: 'NOTIFICATION_CLOSED',
+            id: self.id,
+            remainingCount: window.activeNotifications.size
+          }));
+        } catch(e) {}
+      }
+    };
+
+    this.addEventListener = function(event, callback) {
+      if (event === 'close') {
+        var originalClose = self.close;
+        self.close = function() {
+          originalClose.call(self);
+          callback();
+        };
+      }
+    };
+  }
+
+  CustomNotification.permission = 'granted';
+  CustomNotification.requestPermission = function() {
+    return Promise.resolve('granted');
+  };
+
+  window.Notification = CustomNotification;
+})();
+""";
