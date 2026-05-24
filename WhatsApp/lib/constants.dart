@@ -109,13 +109,26 @@ String notificationOverrideJS = """
   if (window.__notificationOverrideInstalled) return;
   window.__notificationOverrideInstalled = true;
 
+  // Keep a reference to the native browser Notification constructor
+  const NativeNotification = window.Notification;
   window.activeNotifications = new Set();
 
   function CustomNotification(title, options) {
+    var self = this;
     this.title = title;
     this.options = options || {};
     this.id = Math.random().toString(36).substring(2, 9);
     window.activeNotifications.add(this.id);
+
+    // Create the native notification to show the desktop popup
+    let native = null;
+    if (NativeNotification) {
+      try {
+        native = new NativeNotification(title, options);
+      } catch (e) {
+        console.error("Failed to create native notification:", e);
+      }
+    }
 
     try {
       NotificationChannel.postMessage(JSON.stringify({
@@ -127,10 +140,14 @@ String notificationOverrideJS = """
       }));
     } catch(e) {}
 
-    var self = this;
     this.close = function() {
       if (window.activeNotifications.has(self.id)) {
         window.activeNotifications.delete(self.id);
+        if (native && typeof native.close === 'function') {
+          try {
+            native.close();
+          } catch(e) {}
+        }
         try {
           NotificationChannel.postMessage(JSON.stringify({
             type: 'NOTIFICATION_CLOSED',
@@ -141,7 +158,37 @@ String notificationOverrideJS = """
       }
     };
 
+    // Forward standard properties and events to the native instance
+    if (native) {
+      Object.defineProperty(this, 'onclick', {
+        get: function() { return native.onclick; },
+        set: function(val) { native.onclick = val; }
+      });
+      Object.defineProperty(this, 'onclose', {
+        get: function() { return native.onclose; },
+        set: function(val) {
+          native.onclose = function() {
+            self.close(); // Clean up tracker on close
+            if (typeof val === 'function') val.apply(this, arguments);
+          };
+        }
+      });
+      Object.defineProperty(this, 'onerror', {
+        get: function() { return native.onerror; },
+        set: function(val) { native.onerror = val; }
+      });
+      Object.defineProperty(this, 'onshow', {
+        get: function() { return native.onshow; },
+        set: function(val) { native.onshow = val; }
+      });
+    }
+
     this.addEventListener = function(event, callback) {
+      if (native && typeof native.addEventListener === 'function') {
+        try {
+          native.addEventListener(event, callback);
+        } catch(e) {}
+      }
       if (event === 'close') {
         var originalClose = self.close;
         self.close = function() {
@@ -152,10 +199,22 @@ String notificationOverrideJS = """
     };
   }
 
-  CustomNotification.permission = 'granted';
-  CustomNotification.requestPermission = function() {
-    return Promise.resolve('granted');
-  };
+  // Inherit static properties and requestPermission
+  if (NativeNotification) {
+    CustomNotification.permission = NativeNotification.permission;
+    CustomNotification.requestPermission = function(callback) {
+      var result = NativeNotification.requestPermission(callback);
+      if (result && typeof result.then === 'function') {
+        return result;
+      }
+      return Promise.resolve(CustomNotification.permission);
+    };
+  } else {
+    CustomNotification.permission = 'granted';
+    CustomNotification.requestPermission = function() {
+      return Promise.resolve('granted');
+    };
+  }
 
   window.Notification = CustomNotification;
 })();
