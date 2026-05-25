@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 import 'package:whatsapp/constants.dart' as constants;
 import 'package:whatsapp/manager/settings_controller.dart';
+import 'package:window_manager/window_manager.dart';
 
 class WhatsAppAccount {
   final String id;
@@ -110,6 +111,14 @@ class WhatsAppAccount {
             hasNotification = remainingCount > 0;
             debugPrint('Notification closed on account $id, remaining: $remainingCount');
             onNotificationChanged?.call(id, hasNotification);
+          } else if (type == 'NOTIFICATION_CLICKED') {
+            debugPrint('Notification clicked on account $id');
+            try {
+              windowManager.show();
+              windowManager.focus();
+            } catch (e) {
+              debugPrint('Error showing window on notification click: $e');
+            }
           }
         } catch (e) {
           debugPrint('Error parsing notification message: $e');

@@ -162,7 +162,17 @@ String notificationOverrideJS = """
     if (native) {
       Object.defineProperty(this, 'onclick', {
         get: function() { return native.onclick; },
-        set: function(val) { native.onclick = val; }
+        set: function(val) {
+          native.onclick = function() {
+            try {
+              NotificationChannel.postMessage(JSON.stringify({
+                type: 'NOTIFICATION_CLICKED',
+                id: self.id
+              }));
+            } catch(e) {}
+            if (typeof val === 'function') val.apply(this, arguments);
+          };
+        }
       });
       Object.defineProperty(this, 'onclose', {
         get: function() { return native.onclose; },
@@ -186,7 +196,19 @@ String notificationOverrideJS = """
     this.addEventListener = function(event, callback) {
       if (native && typeof native.addEventListener === 'function') {
         try {
-          native.addEventListener(event, callback);
+          if (event === 'click') {
+            native.addEventListener('click', function() {
+              try {
+                NotificationChannel.postMessage(JSON.stringify({
+                  type: 'NOTIFICATION_CLICKED',
+                  id: self.id
+                }));
+              } catch(e) {}
+              if (typeof callback === 'function') callback.apply(this, arguments);
+            });
+          } else {
+            native.addEventListener(event, callback);
+          }
         } catch(e) {}
       }
       if (event === 'close') {
