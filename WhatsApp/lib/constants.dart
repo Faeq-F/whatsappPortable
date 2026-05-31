@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 
+const String appVersion = '2.3.0';
+const String remoteVersionUrl =
+    'https://raw.githubusercontent.com/Faeq-F/whatsappPortable/main/Version';
+const String repoReleasesUrl =
+    'https://github.com/Faeq-F/whatsappPortable/releases';
+
 final navigatorKey = GlobalKey<NavigatorState>();
 
 final ThemeData lightTheme = ThemeData(

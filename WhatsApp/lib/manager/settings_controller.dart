@@ -11,6 +11,9 @@ class SettingsController with ChangeNotifier {
   bool _alwaysShowTabBar = true;
   bool get alwaysShowTabBar => _alwaysShowTabBar;
 
+  bool _checkForUpdates = true;
+  bool get checkForUpdates => _checkForUpdates;
+
   Future<File> get _settingsFile async {
     final path = Directory.current.path;
     return File('$path/settings.json');
@@ -50,6 +53,7 @@ class SettingsController with ChangeNotifier {
     }
 
     _alwaysShowTabBar = settings['alwaysShowTabBar'] ?? true;
+    _checkForUpdates = settings['checkForUpdates'] ?? true;
     notifyListeners();
   }
 
@@ -66,6 +70,14 @@ class SettingsController with ChangeNotifier {
     settings['alwaysShowTabBar'] = value;
     await writeSettings(settings);
     _alwaysShowTabBar = value;
+    notifyListeners();
+  }
+
+  Future<void> updateCheckForUpdates(bool value) async {
+    final settings = await readSettings();
+    settings['checkForUpdates'] = value;
+    await writeSettings(settings);
+    _checkForUpdates = value;
     notifyListeners();
   }
 }

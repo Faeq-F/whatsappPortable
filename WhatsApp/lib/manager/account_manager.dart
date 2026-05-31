@@ -12,7 +12,7 @@ class AccountManager with ChangeNotifier {
 
   List<WhatsAppAccount> _accounts = [];
   WhatsAppAccount? _currentAccount;
-  bool _isDialogOpen = false;
+  int _openDialogsCount = 0;
   bool _hasAnyNotification = false;
 
   static const String _normalIconPath = 'images/icon.ico';
@@ -20,10 +20,14 @@ class AccountManager with ChangeNotifier {
 
   List<WhatsAppAccount> get accounts => _accounts;
   WhatsAppAccount? get currentAccount => _currentAccount;
-  bool get isDialogOpen => _isDialogOpen;
+  bool get isDialogOpen => _openDialogsCount > 0;
 
   void setDialogOpen(bool isOpen) {
-    _isDialogOpen = isOpen;
+    if (isOpen) {
+      _openDialogsCount++;
+    } else {
+      _openDialogsCount = (_openDialogsCount - 1).clamp(0, 99);
+    }
     notifyListeners();
   }
 

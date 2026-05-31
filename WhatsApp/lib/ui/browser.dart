@@ -4,6 +4,7 @@ import 'package:webview_win_floating/webview_win_floating.dart';
 import 'package:whatsapp/manager/settings_controller.dart';
 import 'package:whatsapp/ui/top_bar.dart';
 import 'package:whatsapp/manager/account_manager.dart';
+import 'package:whatsapp/manager/update_checker.dart';
 import 'package:window_manager/window_manager.dart';
 
 class Browser extends StatefulWidget {
@@ -25,6 +26,10 @@ class _Browser extends State<Browser> with WindowListener {
     _accountManager =
         AccountManager(settingsController: widget.settingsController);
     _loadAccounts();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      UpdateChecker.checkForUpdates(context, widget.settingsController, _accountManager);
+    });
   }
 
   Future<void> _loadAccounts() async {
@@ -115,7 +120,8 @@ class _Browser extends State<Browser> with WindowListener {
 
               return Column(
                 children: [
-                  if (widget.settingsController.alwaysShowTabBar || accountCount > 1)
+                  if (widget.settingsController.alwaysShowTabBar ||
+                      accountCount > 1)
                     Container(
                       height: 48,
                       decoration: BoxDecoration(
@@ -137,7 +143,8 @@ class _Browser extends State<Browser> with WindowListener {
                               child: Builder(
                                 builder: (context) {
                                   return TabBar(
-                                    controller: DefaultTabController.of(context),
+                                    controller:
+                                        DefaultTabController.of(context),
                                     isScrollable: true,
                                     onTap: (index) {
                                       if (index >= 0 &&
@@ -146,12 +153,14 @@ class _Browser extends State<Browser> with WindowListener {
                                         final account =
                                             _accountManager.accounts[index];
                                         if (account.id !=
-                                            _accountManager.currentAccount?.id) {
+                                            _accountManager
+                                                .currentAccount?.id) {
                                           _switchAccount(account.id);
                                         }
                                       }
                                     },
-                                    tabs: _accountManager.accounts.map((account) {
+                                    tabs:
+                                        _accountManager.accounts.map((account) {
                                       return Tab(text: account.name);
                                     }).toList(),
                                     labelColor: Theme.of(context).primaryColor,

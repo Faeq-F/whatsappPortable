@@ -5,6 +5,7 @@ import 'package:whatsapp/manager/settings_controller.dart';
 import 'package:whatsapp/model/account.dart';
 import 'package:whatsapp/manager/account_manager.dart';
 import 'package:webview_win_floating/webview_win_floating.dart';
+import 'package:whatsapp/manager/update_checker.dart';
 
 class SettingsDialog extends StatefulWidget {
   final SettingsController settingsController;
@@ -26,139 +27,182 @@ class _SettingsDialogState extends State<SettingsDialog> {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 400, maxHeight: 580),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const _SectionHeader(
-                icon: Icons.color_lens_outlined, title: 'Theme'),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: DropdownButton<ThemeMode>(
-                value: widget.settingsController.themeMode,
-                items: const [
-                  DropdownMenuItem(
-                    value: ThemeMode.system,
-                    child: Text('System'),
-                  ),
-                  DropdownMenuItem(
-                    value: ThemeMode.light,
-                    child: Text('Light'),
-                  ),
-                  DropdownMenuItem(
-                    value: ThemeMode.dark,
-                    child: Text('Dark'),
-                  ),
-                ],
-                onChanged: (value) {
-                  if (value == null) return;
-                  final navigator = Navigator.of(context);
-                  unawaited(
-                      widget.settingsController.updateThemeMode(value).then((_) {
-                    if (!mounted) return;
-                    final currentAccount = widget.accountManager.currentAccount;
-                    if (currentAccount != null) {
-                      currentAccount.webViewController.reload();
-                    }
-                    navigator.pop();
-                  }));
-                },
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline,
-                      size: 14, color: Theme.of(context).hintColor),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Match this setting in WhatsApp for a cohesive look.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).hintColor,
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _SectionHeader(
+                  icon: Icons.color_lens_outlined, title: 'Theme'),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: DropdownButton<ThemeMode>(
+                  value: widget.settingsController.themeMode,
+                  items: const [
+                    DropdownMenuItem(
+                      value: ThemeMode.system,
+                      child: Text('System'),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            const _SectionHeader(
-                icon: Icons.manage_accounts, title: 'Manage Accounts'),
-            SizedBox(
-              height: 200,
-              child: ListenableBuilder(
-                listenable: widget.accountManager,
-                builder: (context, child) {
-                  return ListView.builder(
-                    padding: EdgeInsets.zero,
-                    itemCount: widget.accountManager.accounts.length,
-                    itemBuilder: (context, index) {
-                      final account = widget.accountManager.accounts[index];
-                      final isCurrent =
-                          widget.accountManager.currentAccount?.id == account.id;
-                      return _AccountTile(
-                        account: account,
-                        isCurrent: isCurrent,
-                        accountManager: widget.accountManager,
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: [
-                  Checkbox(
-                    value: widget.settingsController.alwaysShowTabBar,
-                    onChanged: (value) {
-                      if (value != null) {
-                        widget.settingsController.updateAlwaysShowTabBar(value);
+                    DropdownMenuItem(
+                      value: ThemeMode.light,
+                      child: Text('Light'),
+                    ),
+                    DropdownMenuItem(
+                      value: ThemeMode.dark,
+                      child: Text('Dark'),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    if (value == null) return;
+                    final navigator = Navigator.of(context);
+                    unawaited(widget.settingsController
+                        .updateThemeMode(value)
+                        .then((_) {
+                      if (!mounted) return;
+                      final currentAccount =
+                          widget.accountManager.currentAccount;
+                      if (currentAccount != null) {
+                        currentAccount.webViewController.reload();
                       }
+                      navigator.pop();
+                    }));
+                  },
+                ),
+              ),
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline,
+                        size: 14, color: Theme.of(context).hintColor),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Match this setting in WhatsApp for a cohesive look.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).hintColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              const _SectionHeader(
+                  icon: Icons.manage_accounts, title: 'Manage Accounts'),
+              SizedBox(
+                height: 200,
+                child: ListenableBuilder(
+                  listenable: widget.accountManager,
+                  builder: (context, child) {
+                    return ListView.builder(
+                      padding: EdgeInsets.zero,
+                      itemCount: widget.accountManager.accounts.length,
+                      itemBuilder: (context, index) {
+                        final account = widget.accountManager.accounts[index];
+                        final isCurrent =
+                            widget.accountManager.currentAccount?.id ==
+                                account.id;
+                        return _AccountTile(
+                          account: account,
+                          isCurrent: isCurrent,
+                          accountManager: widget.accountManager,
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Add account'),
+                    onPressed: () {
+                      widget.accountManager.addAccount();
                     },
                   ),
-                  const Text('Always show tab bar'),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Add account'),
-                  onPressed: () {
-                    widget.accountManager.addAccount();
-                  },
                 ),
               ),
-            ),
-            const Divider(height: 1),
-            const _SectionHeader(icon: Icons.developer_mode, title: 'DevTools'),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.open_in_new, size: 18),
-                  label: const Text('Debug active tab'),
-                  onPressed: () {
-                    final currentAccount = widget.accountManager.currentAccount;
-                    if (currentAccount != null) {
-                      (currentAccount.webViewController.platform
-                              as WindowsPlatformWebViewController)
-                          .openDevTools();
-                    }
-                    Navigator.pop(context);
-                  },
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  children: [
+                    Checkbox(
+                      value: widget.settingsController.alwaysShowTabBar,
+                      onChanged: (value) {
+                        if (value != null) {
+                          widget.settingsController
+                              .updateAlwaysShowTabBar(value);
+                        }
+                      },
+                    ),
+                    const Text('Always show tab bar'),
+                  ],
                 ),
               ),
-            ),
-          ],
+              const Divider(height: 1),
+              const _SectionHeader(icon: Icons.update, title: 'Updates'),
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    Checkbox(
+                      value: widget.settingsController.checkForUpdates,
+                      onChanged: (value) {
+                        if (value != null) {
+                          widget.settingsController
+                              .updateCheckForUpdates(value);
+                        }
+                      },
+                    ),
+                    const Expanded(child: Text('Check for updates on launch')),
+                    TextButton(
+                      onPressed: () {
+                        UpdateChecker.checkForUpdates(
+                          context,
+                          widget.settingsController,
+                          widget.accountManager,
+                          force: true,
+                        );
+                      },
+                      child: const Text('Check Now'),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              const _SectionHeader(
+                  icon: Icons.developer_mode, title: 'DevTools'),
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.open_in_new, size: 18),
+                    label: const Text('Debug active tab'),
+                    onPressed: () {
+                      final currentAccount =
+                          widget.accountManager.currentAccount;
+                      if (currentAccount != null) {
+                        (currentAccount.webViewController.platform
+                                as WindowsPlatformWebViewController)
+                            .openDevTools();
+                      }
+                      Navigator.pop(context);
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

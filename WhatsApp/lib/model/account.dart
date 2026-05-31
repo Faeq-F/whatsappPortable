@@ -97,7 +97,7 @@ class WhatsAppAccount {
     // Register a JavaScript channel to receive notification events
     _webViewController!.addJavaScriptChannel(
       'NotificationChannel',
-      onMessageReceived: (JavaScriptMessage message) {
+      onMessageReceived: (JavaScriptMessage message) async {
         try {
           final data = jsonDecode(message.message) as Map<String, dynamic>;
           final type = data['type'] as String;
@@ -114,8 +114,13 @@ class WhatsAppAccount {
           } else if (type == 'NOTIFICATION_CLICKED') {
             debugPrint('Notification clicked on account $id');
             try {
-              windowManager.show();
-              windowManager.focus();
+              if (await windowManager.isMinimized()) {
+                await windowManager.restore();
+              }
+              await windowManager.show();
+              await windowManager.focus();
+              await windowManager.setAlwaysOnTop(true);
+              await windowManager.setAlwaysOnTop(false);
             } catch (e) {
               debugPrint('Error showing window on notification click: $e');
             }
