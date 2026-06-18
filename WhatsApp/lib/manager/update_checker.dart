@@ -34,12 +34,7 @@ class UpdateChecker {
     if (latestVersion == null) {
       debugPrint('Update check failed or returned empty content.');
       if (force && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                'Could not reach the update server. Please check your internet connection.'),
-          ),
-        );
+        _showErrorDialog(context, accountManager);
       }
       return;
     }
@@ -53,11 +48,7 @@ class UpdateChecker {
       }
     } else {
       if (force && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('You are already running the latest version!'),
-          ),
-        );
+        _showUpToDateDialog(context, accountManager);
       }
     }
   }
@@ -253,6 +244,134 @@ class UpdateChecker {
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+    accountManager.setDialogOpen(false);
+  }
+
+  /// Displays the connection/update failure dialog.
+  static void _showErrorDialog(
+    BuildContext context,
+    AccountManager accountManager,
+  ) async {
+    accountManager.setDialogOpen(true);
+    await showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: isDark ? Colors.grey.shade900 : Colors.white,
+          titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          title: Row(
+            children: [
+              const Icon(
+                Icons.error_outline_rounded,
+                color: Colors.redAccent,
+                size: 28,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Connection Error',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Could not reach the update server. Please check your internet connection.',
+            style: TextStyle(
+              fontSize: 15,
+              color: isDark ? Colors.grey.shade300 : Colors.grey.shade800,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'OK',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).primaryColor,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+    accountManager.setDialogOpen(false);
+  }
+
+  /// Displays the "up to date" status dialog.
+  static void _showUpToDateDialog(
+    BuildContext context,
+    AccountManager accountManager,
+  ) async {
+    accountManager.setDialogOpen(true);
+    await showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: isDark ? Colors.grey.shade900 : Colors.white,
+          titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          title: Row(
+            children: [
+              const Icon(
+                Icons.check_circle_outline_rounded,
+                color: Colors.green,
+                size: 28,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Up to Date',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'You are already running the latest version!',
+            style: TextStyle(
+              fontSize: 15,
+              color: isDark ? Colors.grey.shade300 : Colors.grey.shade800,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'OK',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).primaryColor,
+                ),
               ),
             ),
           ],

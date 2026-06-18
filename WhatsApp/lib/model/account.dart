@@ -67,7 +67,9 @@ class WhatsAppAccount {
       params,
       onPermissionRequest: (request) {
         var req = request.platform as WinWebViewPermissionRequest;
-        if (req.kind == WinWebViewPermissionResourceType.notification) {
+        if (req.url.contains("whatsapp")) {
+          req.grant();
+        } else if (req.kind == WinWebViewPermissionResourceType.notification) {
           req.grant();
         } else {
           req.deny();
