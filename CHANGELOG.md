@@ -7,13 +7,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 <br /><br />
 
-## [2.3.0] - 2026-06-
+## [2.3.0] - 2026-06-20
 ### Added
 - Notification icon for the system tray task
-- Update checks
+- Update checker
+
+### Changes
+- Hid the new "Download Whatsapp for Windows" link in the intro-panel (was visible when logged in and no chat was open)
 
 ### Fixed
 - Open app window when notification is clicked
+- Auto-dismissal of dialogs
+- Executable version property incorrectly set
+- Theming issues
 
 <br /><br />
 

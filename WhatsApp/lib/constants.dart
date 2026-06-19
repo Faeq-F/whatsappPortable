@@ -112,8 +112,11 @@ String fillScreen = """
 """;
 
 String removeDownloadForWindows = """
-  "div > div[style=\\"opacity: 1;\\"] {"+
-      "display: none;"+
+  "div:has(a[href*=\\"whatsapp.com/download\\"]), div:has(a[href*=\\"microsoft.com/store\\"]) {" +
+      "display: none !important;" +
+  "}"+
+  "section[data-testid=\\"intro-panel\\"] > :first-child {" +
+      "display: none !important;" +
   "}"+
 """;
 
