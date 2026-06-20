@@ -107,11 +107,13 @@ class WhatsAppAccount {
 
           if (type == 'NOTIFICATION_RECEIVED') {
             hasNotification = true;
-            debugPrint('Notification received on account $id: ${data['title']}');
+            debugPrint(
+                'Notification received on account $id: ${data['title']}');
             onNotificationChanged?.call(id, true);
           } else if (type == 'NOTIFICATION_CLOSED') {
             hasNotification = remainingCount > 0;
-            debugPrint('Notification closed on account $id, remaining: $remainingCount');
+            debugPrint(
+                'Notification closed on account $id, remaining: $remainingCount');
             onNotificationChanged?.call(id, hasNotification);
           } else if (type == 'NOTIFICATION_CLICKED') {
             debugPrint('Notification clicked on account $id');
