@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:whatsapp/ui/browser.dart';
 import 'package:whatsapp/manager/settings_controller.dart';
+import 'package:whatsapp/manager/localization.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'dart:io';
@@ -60,7 +61,7 @@ class WhatsApp extends StatelessWidget with TrayListener {
             onClick: (MenuItem item) async {
               await toggleWindow();
             }),
-        MenuItem.separator(),
+         MenuItem.separator(),
         MenuItem(
             label: 'Exit',
             onClick: (MenuItem item) {
@@ -76,20 +77,22 @@ class WhatsApp extends StatelessWidget with TrayListener {
     return ListenableBuilder(
         listenable: settingsController,
         builder: (BuildContext context, Widget? child) {
+          final isRtl = AppLanguages.isRtl(settingsController.language);
           return MaterialApp(
               debugShowCheckedModeBanner: false,
               restorationScopeId: 'app',
-              supportedLocales: const [
-                Locale('en', ''),
-              ],
+              supportedLocales: AppLanguages.list.map((lang) => Locale(lang['code']!, '')).toList(),
               theme: constants.lightTheme,
               darkTheme: constants.darkTheme,
               themeMode: settingsController.themeMode,
               navigatorKey: constants.navigatorKey,
-              home: Scaffold(
-                  body: Browser(
-                settingsController: settingsController,
-              )),
+              home: Directionality(
+                textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+                child: Scaffold(
+                    body: Browser(
+                  settingsController: settingsController,
+                )),
+              ),
               title: 'WhatsApp');
         });
   }

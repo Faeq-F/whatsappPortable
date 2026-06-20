@@ -1,6 +1,6 @@
 {
-  "theme": "ThemeMode.system",
-  "alwaysShowTabBar": true,
-  "checkForUpdates": true,
-  "accounts": []
+    "theme": "ThemeMode.system",
+    "alwaysShowTabBar": true,
+    "checkForUpdates": true,
+    "accounts": []
 }

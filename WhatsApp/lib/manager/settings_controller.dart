@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'dart:convert';
+import 'localization.dart';
 
 class SettingsController with ChangeNotifier {
   SettingsController();
@@ -14,9 +15,24 @@ class SettingsController with ChangeNotifier {
   bool _checkForUpdates = true;
   bool get checkForUpdates => _checkForUpdates;
 
+  String _language = 'en';
+  String get language => _language;
+
+  AppLocalizations _localizations =
+      AppLocalizations(AppLocalizations.enStrings);
+  AppLocalizations get localizations => _localizations;
+
+  bool _isTranslating = false;
+  bool get isTranslating => _isTranslating;
+
   Future<File> get _settingsFile async {
     final path = Directory.current.path;
     return File('$path/settings.json');
+  }
+
+  Future<File> get _cacheFile async {
+    final path = Directory.current.path;
+    return File('$path/translations_cache.json');
   }
 
   Future<Map<String, dynamic>> readSettings() async {
@@ -54,7 +70,78 @@ class SettingsController with ChangeNotifier {
 
     _alwaysShowTabBar = settings['alwaysShowTabBar'] ?? true;
     _checkForUpdates = settings['checkForUpdates'] ?? true;
+    _language = settings['language'] ?? 'en';
+
+    final cacheFile = await _cacheFile;
+    Map<String, dynamic>? cacheData;
+    if (await cacheFile.exists()) {
+      try {
+        final cacheContent = await cacheFile.readAsString();
+        if (cacheContent.isNotEmpty) {
+          cacheData = jsonDecode(cacheContent) as Map<String, dynamic>?;
+        }
+      } catch (e) {
+        debugPrint('Failed to read translations cache: $e');
+      }
+    }
+
+    if (cacheData != null && cacheData['cached_language'] == _language) {
+      final cached = cacheData['translations'] as Map<String, dynamic>?;
+      if (cached != null) {
+        _localizations =
+            AppLocalizations(cached.map((k, v) => MapEntry(k, v.toString())));
+      } else {
+        _fallbackOrLoadTranslations();
+      }
+    } else {
+      _fallbackOrLoadTranslations();
+    }
+
     notifyListeners();
+  }
+
+  void _fallbackOrLoadTranslations() {
+    if (_language == 'en') {
+      _localizations = AppLocalizations(AppLocalizations.enStrings);
+    } else {
+      _loadTranslationsAsync(_language);
+    }
+  }
+
+  Future<void> _loadTranslationsAsync(String langCode) async {
+    _isTranslating = true;
+    notifyListeners();
+    try {
+      final fetched = await AppLocalizations.fetchTranslations(langCode);
+      _localizations = AppLocalizations(fetched);
+
+      final cacheFile = await _cacheFile;
+      await cacheFile.writeAsString(jsonEncode({
+        'cached_language': langCode,
+        'translations': fetched,
+      }));
+    } catch (e) {
+      debugPrint('Failed to load translations async: $e');
+    } finally {
+      _isTranslating = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> updateLanguage(String newLanguage) async {
+    if (_language == newLanguage) return;
+
+    _language = newLanguage;
+    final settings = await readSettings();
+    settings['language'] = newLanguage;
+    await writeSettings(settings);
+
+    if (newLanguage == 'en') {
+      _localizations = AppLocalizations(AppLocalizations.enStrings);
+      notifyListeners();
+    } else {
+      await _loadTranslationsAsync(newLanguage);
+    }
   }
 
   Future<void> updateThemeMode(ThemeMode newThemeMode) async {

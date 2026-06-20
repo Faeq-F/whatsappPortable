@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:whatsapp/manager/settings_controller.dart';
+import 'package:whatsapp/manager/localization.dart';
 import 'package:whatsapp/model/account.dart';
 import 'package:whatsapp/manager/account_manager.dart';
 import 'package:webview_win_floating/webview_win_floating.dart';
@@ -24,187 +25,239 @@ class SettingsDialog extends StatefulWidget {
 class _SettingsDialogState extends State<SettingsDialog> {
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 400),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const _SectionHeader(
-                  icon: Icons.color_lens_outlined, title: 'Theme'),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: DropdownButton<ThemeMode>(
-                  value: widget.settingsController.themeMode,
-                  items: const [
-                    DropdownMenuItem(
-                      value: ThemeMode.system,
-                      child: Text('System'),
+    final loc = widget.settingsController.localizations;
+    return ListenableBuilder(
+      listenable: widget.settingsController,
+      builder: (context, child) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _SectionHeader(
+                      icon: Icons.color_lens_outlined, title: loc.get('theme')),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: DropdownButton<ThemeMode>(
+                      value: widget.settingsController.themeMode,
+                      items: [
+                        DropdownMenuItem(
+                          value: ThemeMode.system,
+                          child: Text(loc.get('system')),
+                        ),
+                        DropdownMenuItem(
+                          value: ThemeMode.light,
+                          child: Text(loc.get('light')),
+                        ),
+                        DropdownMenuItem(
+                          value: ThemeMode.dark,
+                          child: Text(loc.get('dark')),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        if (value == null) return;
+                        final navigator = Navigator.of(context);
+                        unawaited(widget.settingsController
+                            .updateThemeMode(value)
+                            .then((_) {
+                          if (!mounted) return;
+                          final currentAccount =
+                              widget.accountManager.currentAccount;
+                          if (currentAccount != null) {
+                            currentAccount.webViewController.reload();
+                          }
+                          navigator.pop();
+                        }));
+                      },
                     ),
-                    DropdownMenuItem(
-                      value: ThemeMode.light,
-                      child: Text('Light'),
+                  ),
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline,
+                            size: 14, color: Theme.of(context).hintColor),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            loc.get('match_cohesive'),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Theme.of(context).hintColor,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    DropdownMenuItem(
-                      value: ThemeMode.dark,
-                      child: Text('Dark'),
+                  ),
+                  const Divider(height: 1),
+                  _SectionHeader(
+                      icon: Icons.language, title: loc.get('language')),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButton<String>(
+                            isExpanded: true,
+                            value: widget.settingsController.language,
+                            items: AppLanguages.list.map((lang) {
+                              return DropdownMenuItem<String>(
+                                value: lang['code'],
+                                child: Text(lang['name']!),
+                              );
+                            }).toList(),
+                            onChanged: widget.settingsController.isTranslating
+                                ? null
+                                : (value) async {
+                                    if (value == null) return;
+                                    await widget.settingsController.updateLanguage(value);
+                                    // Notify webview of new language target
+                                    final currentAccount = widget.accountManager.currentAccount;
+                                    if (currentAccount != null) {
+                                      await currentAccount.updateWebviewLanguage(value);
+                                    }
+                                  },
+                          ),
+                        ),
+                        if (widget.settingsController.isTranslating)
+                          const Padding(
+                            padding: EdgeInsets.only(left: 8),
+                            child: SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                      ],
                     ),
-                  ],
-                  onChanged: (value) {
-                    if (value == null) return;
-                    final navigator = Navigator.of(context);
-                    unawaited(widget.settingsController
-                        .updateThemeMode(value)
-                        .then((_) {
-                      if (!mounted) return;
-                      final currentAccount =
-                          widget.accountManager.currentAccount;
-                      if (currentAccount != null) {
-                        currentAccount.webViewController.reload();
-                      }
-                      navigator.pop();
-                    }));
-                  },
-                ),
-              ),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
-                  children: [
-                    Icon(Icons.info_outline,
-                        size: 14, color: Theme.of(context).hintColor),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Match this setting in WhatsApp for a cohesive look.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(context).hintColor,
+                  ),
+                  const SizedBox(height: 12),
+                  const Divider(height: 1),
+                  _SectionHeader(
+                      icon: Icons.manage_accounts, title: loc.get('manage_accounts')),
+                  SizedBox(
+                    height: 200,
+                    child: ListenableBuilder(
+                      listenable: widget.accountManager,
+                      builder: (context, child) {
+                        return ListView.builder(
+                          padding: EdgeInsets.zero,
+                          itemCount: widget.accountManager.accounts.length,
+                          itemBuilder: (context, index) {
+                            final account = widget.accountManager.accounts[index];
+                            final isCurrent =
+                                widget.accountManager.currentAccount?.id ==
+                                    account.id;
+                            return _AccountTile(
+                              account: account,
+                              isCurrent: isCurrent,
+                              accountManager: widget.accountManager,
+                              localizations: loc,
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.add, size: 18),
+                        label: Text(loc.get('add_account')),
+                        onPressed: () {
+                          widget.accountManager.addAccount();
+                        },
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1),
-              const _SectionHeader(
-                  icon: Icons.manage_accounts, title: 'Manage Accounts'),
-              SizedBox(
-                height: 200,
-                child: ListenableBuilder(
-                  listenable: widget.accountManager,
-                  builder: (context, child) {
-                    return ListView.builder(
-                      padding: EdgeInsets.zero,
-                      itemCount: widget.accountManager.accounts.length,
-                      itemBuilder: (context, index) {
-                        final account = widget.accountManager.accounts[index];
-                        final isCurrent =
-                            widget.accountManager.currentAccount?.id ==
-                                account.id;
-                        return _AccountTile(
-                          account: account,
-                          isCurrent: isCurrent,
-                          accountManager: widget.accountManager,
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.add, size: 18),
-                    label: const Text('Add account'),
-                    onPressed: () {
-                      widget.accountManager.addAccount();
-                    },
                   ),
-                ),
-              ),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  children: [
-                    Checkbox(
-                      value: widget.settingsController.alwaysShowTabBar,
-                      onChanged: (value) {
-                        if (value != null) {
-                          widget.settingsController
-                              .updateAlwaysShowTabBar(value);
-                        }
-                      },
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      children: [
+                        Checkbox(
+                          value: widget.settingsController.alwaysShowTabBar,
+                          onChanged: (value) {
+                            if (value != null) {
+                              widget.settingsController
+                                  .updateAlwaysShowTabBar(value);
+                            }
+                          },
+                        ),
+                        Text(loc.get('always_show_tab_bar')),
+                      ],
                     ),
-                    const Text('Always show tab bar'),
-                  ],
-                ),
-              ),
-              const Divider(height: 1),
-              const _SectionHeader(icon: Icons.update, title: 'Updates'),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
-                  children: [
-                    Checkbox(
-                      value: widget.settingsController.checkForUpdates,
-                      onChanged: (value) {
-                        if (value != null) {
-                          widget.settingsController
-                              .updateCheckForUpdates(value);
-                        }
-                      },
-                    ),
-                    const Expanded(child: Text('Check for updates on launch')),
-                    TextButton(
-                      onPressed: () {
-                        UpdateChecker.checkForUpdates(
-                          context,
-                          widget.settingsController,
-                          widget.accountManager,
-                          force: true,
-                        );
-                      },
-                      child: const Text('Check Now'),
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1),
-              const _SectionHeader(
-                  icon: Icons.developer_mode, title: 'DevTools'),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.open_in_new, size: 18),
-                    label: const Text('Debug active tab'),
-                    onPressed: () {
-                      final currentAccount =
-                          widget.accountManager.currentAccount;
-                      if (currentAccount != null) {
-                        (currentAccount.webViewController.platform
-                                as WindowsPlatformWebViewController)
-                            .openDevTools();
-                      }
-                      Navigator.pop(context);
-                    },
                   ),
-                ),
+                  const Divider(height: 1),
+                  _SectionHeader(icon: Icons.update, title: loc.get('updates')),
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Row(
+                      children: [
+                        Checkbox(
+                          value: widget.settingsController.checkForUpdates,
+                          onChanged: (value) {
+                            if (value != null) {
+                              widget.settingsController
+                                  .updateCheckForUpdates(value);
+                            }
+                          },
+                        ),
+                        Expanded(child: Text(loc.get('check_updates_launch'))),
+                        TextButton(
+                          onPressed: () {
+                            UpdateChecker.checkForUpdates(
+                              context,
+                              widget.settingsController,
+                              widget.accountManager,
+                              force: true,
+                            );
+                          },
+                          child: Text(loc.get('check_now')),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  _SectionHeader(
+                      icon: Icons.developer_mode, title: loc.get('devtools')),
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.open_in_new, size: 18),
+                        label: Text(loc.get('debug_active_tab')),
+                        onPressed: () {
+                          final currentAccount =
+                              widget.accountManager.currentAccount;
+                          if (currentAccount != null) {
+                            (currentAccount.webViewController.platform
+                                    as WindowsPlatformWebViewController)
+                                .openDevTools();
+                          }
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      }
     );
   }
 }
@@ -241,11 +294,13 @@ class _AccountTile extends StatefulWidget {
   final WhatsAppAccount account;
   final bool isCurrent;
   final AccountManager accountManager;
+  final AppLocalizations localizations;
 
   const _AccountTile({
     required this.account,
     required this.isCurrent,
     required this.accountManager,
+    required this.localizations,
   });
 
   @override
@@ -281,6 +336,7 @@ class _AccountTileState extends State<_AccountTile> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = widget.localizations;
     return ListTile(
       leading: Icon(
         Icons.account_circle,
@@ -312,7 +368,7 @@ class _AccountTileState extends State<_AccountTile> {
             IconButton(
               icon: const Icon(Icons.edit, size: 16),
               onPressed: () => setState(() => _editing = true),
-              tooltip: 'Rename',
+              tooltip: loc.get('rename'),
             ),
           if (widget.accountManager.accounts.length > 1)
             IconButton(
@@ -321,14 +377,14 @@ class _AccountTileState extends State<_AccountTile> {
                 showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
-                    title: const Text('Delete Account'),
+                    title: Text(loc.get('delete_account_title')),
                     content: Text(
-                      'Delete "${widget.account.name}"? This will remove all data for this account.',
+                      loc.get('delete_account_confirm', args: {'name': widget.account.name}),
                     ),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text('Cancel'),
+                        child: Text(loc.get('cancel')),
                       ),
                       TextButton(
                         onPressed: () {
@@ -336,14 +392,14 @@ class _AccountTileState extends State<_AccountTile> {
                           widget.accountManager
                               .removeAccount(widget.account.id);
                         },
-                        child: const Text('Delete',
-                            style: TextStyle(color: Colors.red)),
+                        child: Text(loc.get('delete'),
+                            style: const TextStyle(color: Colors.red)),
                       ),
                     ],
                   ),
                 );
               },
-              tooltip: 'Delete',
+              tooltip: loc.get('delete'),
             ),
         ],
       ),

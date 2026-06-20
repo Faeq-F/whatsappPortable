@@ -27,7 +27,7 @@ class DraggableAppBar extends StatelessWidget implements PreferredSizeWidget {
               child: IconButton(
                 color: Theme.of(context).hintColor,
                 icon: const Icon(Icons.settings),
-                tooltip: 'Settings',
+                tooltip: settingsController.localizations.get('settings'),
                 iconSize: 15,
                 padding: EdgeInsets.zero,
                 onPressed: () async {

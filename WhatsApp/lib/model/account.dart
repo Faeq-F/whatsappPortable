@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 import 'package:whatsapp/constants.dart' as constants;
 import 'package:whatsapp/manager/settings_controller.dart';
+import 'package:whatsapp/manager/localization.dart';
 import 'package:window_manager/window_manager.dart';
 
 class WhatsAppAccount {
@@ -87,6 +88,21 @@ class WhatsAppAccount {
     }
   }
 
+  Future<void> updateWebviewLanguage(String langCode) async {
+    if (_webViewController == null) return;
+    try {
+      final lang = AppLanguages.list.firstWhere(
+        (l) => l['code'] == langCode,
+        orElse: () => {'name': 'English', 'code': 'en'},
+      );
+      final langName = lang['name']!;
+      await _webViewController!.runJavaScript(
+          "if (window.setTargetLanguage) { window.setTargetLanguage('$langCode', '$langName'); }");
+    } catch (e) {
+      debugPrint('Failed to update webview language in JS: $e');
+    }
+  }
+
   void setupWebView(
     SettingsController settingsController, {
     Function(String accountId, bool hasNotification)? onNotificationChanged,
@@ -95,6 +111,38 @@ class WhatsAppAccount {
       debugPrint('webView already set up for account $id, skipping');
       return;
     }
+
+    // Register Translation JS Channel to bypass CORS block on fetch
+    _webViewController!.addJavaScriptChannel(
+      'TranslationChannel',
+      onMessageReceived: (JavaScriptMessage message) async {
+        try {
+          final data = jsonDecode(message.message) as Map<String, dynamic>;
+          final transId = data['id'] as String;
+          final text = data['text'] as String;
+          final targetLang = data['targetLang'] as String;
+
+          final result = await AppLocalizations.translateSingle(text, targetLang);
+          final escapedResult = result
+              .replaceAll("\\", "\\\\")
+              .replaceAll("'", "\\'")
+              .replaceAll('"', '\\"')
+              .replaceAll('\n', '\\n')
+              .replaceAll('\r', '\\r');
+
+          await _webViewController!.runJavaScript(
+              "if (window.onTranslationReceived) { window.onTranslationReceived('$transId', '$escapedResult', true); }");
+        } catch (e) {
+          debugPrint('Error handling translation bridge: $e');
+          try {
+            final data = jsonDecode(message.message) as Map<String, dynamic>;
+            final transId = data['id'] as String;
+            await _webViewController!.runJavaScript(
+                "if (window.onTranslationReceived) { window.onTranslationReceived('$transId', '', false); }");
+          } catch (_) {}
+        }
+      },
+    );
 
     // Register a JavaScript channel to receive notification events
     _webViewController!.addJavaScriptChannel(
@@ -144,7 +192,7 @@ class WhatsAppAccount {
         }
         return launch;
       },
-      onPageFinished: (url) {
+      onPageFinished: (url) async {
         final brightness = settingsController.themeMode == ThemeMode.system
             ? WidgetsBinding.instance.platformDispatcher.platformBrightness
             : (settingsController.themeMode == ThemeMode.light
@@ -158,6 +206,10 @@ class WhatsAppAccount {
 
         // Inject notification override script
         _webViewController!.runJavaScript(constants.notificationOverrideJS);
+
+        // Inject translation script
+        _webViewController!.runJavaScript(constants.translationJS);
+        await updateWebviewLanguage(settingsController.language);
       },
       onWebResourceError: (error) =>
           debugPrint("onWebResourceError: ${error.description}"),

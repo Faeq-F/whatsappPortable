@@ -28,7 +28,8 @@ class _Browser extends State<Browser> with WindowListener {
     _loadAccounts();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      UpdateChecker.checkForUpdates(context, widget.settingsController, _accountManager);
+      UpdateChecker.checkForUpdates(
+          context, widget.settingsController, _accountManager);
     });
   }
 

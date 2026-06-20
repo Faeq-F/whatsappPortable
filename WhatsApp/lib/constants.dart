@@ -257,3 +257,200 @@ String notificationOverrideJS = """
   window.Notification = CustomNotification;
 })();
 """;
+
+String translationJS = """
+(function() {
+  if (window.__translationOverrideInstalled) return;
+  window.__translationOverrideInstalled = true;
+
+  window.__translationTargetLangCode = 'en';
+  window.__translationTargetLangName = 'English';
+
+  window.setTargetLanguage = function(code, name) {
+    window.__translationTargetLangCode = code;
+    window.__translationTargetLangName = name;
+  };
+
+  document.addEventListener('contextmenu', function(e) {
+    if (window.__skipTranslationMenu) return;
+    const selectedText = window.getSelection().toString().trim();
+    const bubble = e.target.closest('.message-in, .message-out, [data-id], [class*="message"]');
+    if (selectedText || bubble) {
+      e.preventDefault();
+      e.stopPropagation();
+      showCustomContextMenu(e.clientX, e.clientY, selectedText, bubble, e.target);
+    }
+  }, true);
+
+  function showCustomContextMenu(x, y, selectedText, bubble, originalTarget) {
+    removeCustomContextMenu();
+
+    const menu = document.createElement('div');
+    menu.id = 'custom-webview-translation-menu';
+    menu.style.position = 'fixed';
+    menu.style.left = x + 'px';
+    menu.style.top = y + 'px';
+    const isDark = document.body.classList.contains('dark');
+    menu.style.backgroundColor = isDark ? '#233138' : '#ffffff';
+    menu.style.color = isDark ? '#e9edef' : '#111b21';
+    menu.style.border = '1px solid ' + (isDark ? '#374248' : '#e9edef');
+    menu.style.borderRadius = '8px';
+    menu.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+    menu.style.padding = '8px 0';
+    menu.style.zIndex = '10000';
+    menu.style.fontFamily = 'Segoe UI, Helvetica Neue, Helvetica, Lucida Grande, Arial, Ubuntu, Cantarell, Fira Sans, sans-serif';
+    menu.style.fontSize = '14px';
+    menu.style.minWidth = '160px';
+    menu.style.cursor = 'pointer';
+
+    const option = document.createElement('div');
+    const targetLangName = window.__translationTargetLangName || 'App Language';
+    option.innerText = 'Translate to ' + targetLangName;
+    option.style.padding = '8px 16px';
+    option.addEventListener('mouseenter', () => {
+      option.style.backgroundColor = isDark ? '#182229' : '#f0f2f5';
+    });
+    option.addEventListener('mouseleave', () => {
+      option.style.backgroundColor = 'transparent';
+    });
+
+    option.addEventListener('click', function() {
+      let textToTranslate = selectedText;
+      if (!textToTranslate && bubble) {
+        const copyable = bubble.querySelector('.copyable-text');
+        textToTranslate = copyable ? copyable.innerText : bubble.innerText;
+      }
+      if (textToTranslate) {
+        textToTranslate = textToTranslate.trim();
+        textToTranslate = textToTranslate.replace(/\\s*\\d{1,2}:\\d{2}\\s*(?:AM|PM|am|pm)?\\s*\$/g, '');
+        
+        if (textToTranslate) {
+          performTranslation(textToTranslate, bubble || document.body);
+        }
+      }
+      removeCustomContextMenu();
+    });
+
+    menu.appendChild(option);
+
+    // Add option to trigger native/whatsapp menu
+    const optionsBtn = document.createElement('div');
+    optionsBtn.innerText = 'WhatsApp Options';
+    optionsBtn.style.padding = '8px 16px';
+    optionsBtn.addEventListener('mouseenter', () => {
+      optionsBtn.style.backgroundColor = isDark ? '#182229' : '#f0f2f5';
+    });
+    optionsBtn.addEventListener('mouseleave', () => {
+      optionsBtn.style.backgroundColor = 'transparent';
+    });
+    optionsBtn.addEventListener('click', function() {
+      removeCustomContextMenu();
+      window.__skipTranslationMenu = true;
+      const newEvent = new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        clientX: x,
+        clientY: y,
+        view: window
+      });
+      originalTarget.dispatchEvent(newEvent);
+      setTimeout(() => {
+        window.__skipTranslationMenu = false;
+      }, 100);
+    });
+    menu.appendChild(optionsBtn);
+
+    document.body.appendChild(menu);
+
+    const closeHandler = function() {
+      removeCustomContextMenu();
+      document.removeEventListener('click', closeHandler);
+    };
+    setTimeout(() => document.addEventListener('click', closeHandler), 10);
+  }
+
+  function removeCustomContextMenu() {
+    const existing = document.getElementById('custom-webview-translation-menu');
+    if (existing) {
+      existing.remove();
+    }
+  }
+
+  function performTranslation(text, container) {
+    const existing = container.querySelector('.custom-translation-bubble');
+    if (existing) existing.remove();
+
+    const transId = 'trans_' + Math.random().toString(36).substring(2, 9);
+
+    const transBubble = document.createElement('div');
+    transBubble.className = 'custom-translation-bubble';
+    transBubble.setAttribute('data-translation-id', transId);
+    transBubble.style.marginTop = '6px';
+    transBubble.style.padding = '6px 8px';
+    transBubble.style.borderRadius = '6px';
+    transBubble.style.fontSize = '12.5px';
+    transBubble.style.lineHeight = '1.4';
+    transBubble.style.borderLeft = '3px solid #00a884';
+    transBubble.style.position = 'relative';
+
+    const isDark = document.body.classList.contains('dark');
+    transBubble.style.backgroundColor = isDark ? '#1f2c34' : '#f0f2f5';
+    transBubble.style.color = isDark ? '#e9edef' : '#111b21';
+
+    const header = document.createElement('div');
+    header.style.fontWeight = 'bold';
+    header.style.fontSize = '11px';
+    header.style.color = '#00a884';
+    header.style.marginBottom = '2px';
+    header.style.display = 'flex';
+    header.style.justifyContent = 'space-between';
+    header.style.alignItems = 'center';
+
+    const title = document.createElement('span');
+    title.innerText = 'Translation';
+    header.appendChild(title);
+
+    const closeBtn = document.createElement('span');
+    closeBtn.innerText = '×';
+    closeBtn.style.cursor = 'pointer';
+    closeBtn.style.fontSize = '14px';
+    closeBtn.style.fontWeight = 'bold';
+    closeBtn.style.padding = '0 4px';
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      transBubble.remove();
+    });
+    header.appendChild(closeBtn);
+
+    transBubble.appendChild(header);
+
+    const bodyText = document.createElement('div');
+    bodyText.className = 'translation-body-text';
+    bodyText.innerText = 'Translating...';
+    transBubble.appendChild(bodyText);
+
+    container.appendChild(transBubble);
+
+    const targetLang = window.__translationTargetLangCode || 'en';
+    try {
+      TranslationChannel.postMessage(JSON.stringify({
+        id: transId,
+        text: text,
+        targetLang: targetLang
+      }));
+    } catch(e) {
+      bodyText.innerText = 'Translation channel error';
+    }
+  }
+
+  window.onTranslationReceived = function(transId, translatedText, isSuccess) {
+    const bubble = document.querySelector('[data-translation-id="' + transId + '"]');
+    if (bubble) {
+      const bodyText = bubble.querySelector('.translation-body-text');
+      if (bodyText) {
+        bodyText.innerText = isSuccess ? translatedText : 'Translation failed';
+      }
+    }
+  };
+})();
+""";
