@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 <br /><br />
 
+## [2.4.0] - 2026-
+
+### Changes
+- Hid the "Get Whatsapp for Windows" link at the bottom of the chats list (was visible when logged in and a chat was open)
+
+### Fixed
+- Notifications only shown after restarting the app, after providing permissions
+
 ## [2.3.0] - 2026-06-20
 ### Added
 - Notification icon for the system tray task
