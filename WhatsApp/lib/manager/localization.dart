@@ -3,84 +3,49 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 class AppLanguages {
-  static const List<Map<String, String>> list = [
-    {"name": "Afrikaans", "code": "af"},
-    {"name": "Albanian", "code": "sq"},
-    {"name": "Amharic", "code": "am"},
-    {"name": "Arabic", "code": "ar"},
-    {"name": "Armenian", "code": "hy"},
-    {"name": "Azerbaijani", "code": "az"},
-    {"name": "Basque", "code": "eu"},
-    {"name": "Bengali", "code": "bn"},
-    {"name": "Bosnian", "code": "bs"},
-    {"name": "Bulgarian", "code": "bg"},
-    {"name": "Catalan", "code": "ca"},
-    {"name": "Chinese (Simplified)", "code": "zh-CN"},
-    {"name": "Chinese (Traditional)", "code": "zh-TW"},
-    {"name": "Croatian", "code": "hr"},
-    {"name": "Czech", "code": "cs"},
-    {"name": "Danish", "code": "da"},
-    {"name": "Dutch", "code": "nl"},
-    {"name": "English", "code": "en"},
-    {"name": "Esperanto", "code": "eo"},
-    {"name": "Estonian", "code": "et"},
-    {"name": "Finnish", "code": "fi"},
-    {"name": "French", "code": "fr"},
-    {"name": "Galician", "code": "gl"},
-    {"name": "Georgian", "code": "ka"},
-    {"name": "German", "code": "de"},
-    {"name": "Greek", "code": "el"},
-    {"name": "Gujarati", "code": "gu"},
-    {"name": "Haitian Creole", "code": "ht"},
-    {"name": "Hebrew", "code": "he"},
-    {"name": "Hindi", "code": "hi"},
-    {"name": "Hungarian", "code": "hu"},
-    {"name": "Icelandic", "code": "is"},
-    {"name": "Indonesian", "code": "id"},
-    {"name": "Irish", "code": "ga"},
-    {"name": "Italian", "code": "it"},
-    {"name": "Japanese", "code": "ja"},
-    {"name": "Kannada", "code": "kn"},
-    {"name": "Kazakh", "code": "kk"},
-    {"name": "Korean", "code": "ko"},
-    {"name": "Latvian", "code": "lv"},
-    {"name": "Lithuanian", "code": "lt"},
-    {"name": "Macedonian", "code": "mk"},
-    {"name": "Malay", "code": "ms"},
-    {"name": "Malayalam", "code": "ml"},
-    {"name": "Marathi", "code": "mr"},
-    {"name": "Mongolian", "code": "mn"},
-    {"name": "Nepali", "code": "ne"},
-    {"name": "Norwegian", "code": "no"},
-    {"name": "Persian", "code": "fa"},
-    {"name": "Polish", "code": "pl"},
-    {"name": "Portuguese", "code": "pt"},
-    {"name": "Punjabi", "code": "pa"},
-    {"name": "Romanian", "code": "ro"},
-    {"name": "Russian", "code": "ru"},
-    {"name": "Serbian", "code": "sr"},
-    {"name": "Slovak", "code": "sk"},
-    {"name": "Slovenian", "code": "sl"},
-    {"name": "Spanish", "code": "es"},
-    {"name": "Swahili", "code": "sw"},
-    {"name": "Swedish", "code": "sv"},
-    {"name": "Tamil", "code": "ta"},
-    {"name": "Telugu", "code": "te"},
-    {"name": "Thai", "code": "th"},
-    {"name": "Turkish", "code": "tr"},
-    {"name": "Ukrainian", "code": "uk"},
-    {"name": "Urdu", "code": "ur"},
-    {"name": "Uzbek", "code": "uz"},
-    {"name": "Vietnamese", "code": "vi"},
-    {"name": "Welsh", "code": "cy"},
-    {"name": "Yiddish", "code": "yi"},
-    {"name": "Zulu", "code": "zu"}
-  ];
-
   static bool isRtl(String code) {
-    const rtlCodes = {'ar', 'fa', 'he', 'iw', 'ur', 'yi', 'ps', 'sd', 'ug', 'syc'};
+    const rtlCodes = {
+      'ar',
+      'fa',
+      'he',
+      'iw',
+      'ur',
+      'yi',
+      'ps',
+      'sd',
+      'ug',
+      'syc'
+    };
     final baseCode = code.split('-').first.toLowerCase();
     return rtlCodes.contains(baseCode);
+  }
+
+  static Future<List<Map<String, String>>> fetchSupportedLanguages() async {
+    final client = HttpClient();
+    try {
+      final uri = Uri.parse(
+          'https://translate.googleapis.com/translate_a/l?client=gtx&hl=en');
+      final request = await client.getUrl(uri);
+      final response = await request.close();
+      if (response.statusCode == 200) {
+        final content = await response.transform(utf8.decoder).join();
+        final decoded = jsonDecode(content) as Map<String, dynamic>;
+        final tl = decoded['tl'] as Map<String, dynamic>?;
+        if (tl != null) {
+          final List<Map<String, String>> langs = [];
+          tl.forEach((code, name) {
+            langs.add({'name': name.toString(), 'code': code.toString()});
+          });
+          langs.sort((a, b) => a['name']!.compareTo(b['name']!));
+          return langs;
+        }
+      }
+    } catch (e) {
+      debugPrint('Failed to fetch supported languages: $e');
+    } finally {
+      client.close();
+    }
+    return [];
   }
 }
 
@@ -105,11 +70,19 @@ class AppLocalizations {
     'devtools': 'DevTools',
     'debug_active_tab': 'Debug active tab',
     'delete_account_title': 'Delete Account',
-    'delete_account_confirm': 'Delete "{name}"? This will remove all data for this account.',
+    'delete_account_confirm':
+        'Delete "{name}"? This will remove all data for this account.',
     'cancel': 'Cancel',
     'delete': 'Delete',
     'rename': 'Rename',
     'language': 'Language',
+    'translate_to_lang': 'Translate to {lang}',
+    'translate_all_messages': 'Translate all messages',
+    'toggle_window': 'Toggle Window',
+    'exit': 'Exit',
+    'translate_message_button': 'Translate message button ',
+    'keep_app_in_english': 'Keep app UI in English',
+    'full_page_translation': 'Translate entire page',
   };
 
   String get(String key, {Map<String, String>? args}) {
@@ -122,7 +95,8 @@ class AppLocalizations {
     return value;
   }
 
-  static Future<Map<String, String>> fetchTranslations(String targetLang) async {
+  static Future<Map<String, String>> fetchTranslations(
+      String targetLang) async {
     if (targetLang == 'en') {
       return enStrings;
     }
@@ -132,12 +106,17 @@ class AppLocalizations {
 
     for (final entry in enStrings.entries) {
       if (entry.key == 'delete_account_confirm') {
-        // Skip template replacement placeholder during translation to avoid translation API messing with it
         final textToTranslate = entry.value.replaceAll('{name}', '___');
-        final translatedText = await _translateText(client, textToTranslate, targetLang);
+        final translatedText =
+            await _translateText(client, textToTranslate, targetLang);
         translated[entry.key] = translatedText.replaceAll('___', '{name}');
+      } else if (entry.key == 'translate_to_lang') {
+        final translatedPrefix =
+            await _translateText(client, "Translate to", targetLang);
+        translated[entry.key] = "$translatedPrefix {lang}";
       } else {
-        translated[entry.key] = await _translateText(client, entry.value, targetLang);
+        translated[entry.key] =
+            await _translateText(client, entry.value, targetLang);
       }
     }
     client.close();
@@ -156,7 +135,8 @@ class AppLocalizations {
     }
   }
 
-  static Future<String> _translateText(HttpClient client, String text, String targetLang) async {
+  static Future<String> _translateText(
+      HttpClient client, String text, String targetLang) async {
     try {
       final uri = Uri.parse(
           'https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=$targetLang&dt=t&q=${Uri.encodeComponent(text)}');

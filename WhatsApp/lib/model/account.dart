@@ -94,16 +94,11 @@ class WhatsAppAccount {
     }
   }
 
-  Future<void> updateWebviewLanguage(String langCode) async {
+  Future<void> updateWebviewLanguage(String langCode, String langName, String translateTooltipLabel, bool enableHover) async {
     if (_webViewController == null) return;
     try {
-      final lang = AppLanguages.list.firstWhere(
-        (l) => l['code'] == langCode,
-        orElse: () => {'name': 'English', 'code': 'en'},
-      );
-      final langName = lang['name']!;
       await _webViewController!.runJavaScript(
-          "if (window.setTargetLanguage) { window.setTargetLanguage('$langCode', '$langName'); }");
+          "if (window.setTargetLanguage) { window.setTargetLanguage('$langCode', '$langName', '$translateTooltipLabel', $enableHover); }");
     } catch (e) {
       debugPrint('Failed to update webview language in JS: $e');
     }
@@ -124,27 +119,61 @@ class WhatsAppAccount {
       onMessageReceived: (JavaScriptMessage message) async {
         try {
           final data = jsonDecode(message.message) as Map<String, dynamic>;
-          final transId = data['id'] as String;
-          final text = data['text'] as String;
+          final type = data['type'] as String?;
           final targetLang = data['targetLang'] as String;
 
-          final result = await AppLocalizations.translateSingle(text, targetLang);
-          final escapedResult = result
-              .replaceAll("\\", "\\\\")
-              .replaceAll("'", "\\'")
-              .replaceAll('"', '\\"')
-              .replaceAll('\n', '\\n')
-              .replaceAll('\r', '\\r');
+          if (type == 'BATCH_TRANSLATE') {
+            final transId = data['id'] as String;
+            final texts = List<String>.from(data['texts'] as List);
+            
+            // Join segments with \n###\n
+            final combinedText = texts.join('\n###\n');
+            final result = await AppLocalizations.translateSingle(combinedText, targetLang);
+            
+            final RegExp separatorPattern = RegExp(r'\n\s*###\s*\n');
+            final translatedParts = result.split(separatorPattern);
+            
+            final List<String> escapedParts = [];
+            for (var i = 0; i < texts.length; i++) {
+              String part = i < translatedParts.length ? translatedParts[i] : texts[i];
+              if (part.isEmpty) part = texts[i];
+              escapedParts.add(part
+                  .replaceAll("\\", "\\\\")
+                  .replaceAll("'", "\\'")
+                  .replaceAll('"', '\\"')
+                  .replaceAll('\n', '\\n')
+                  .replaceAll('\r', '\\r'));
+            }
+            final partsJson = jsonEncode(escapedParts);
+            await _webViewController!.runJavaScript(
+                "if (window.onBatchTranslationReceived) { window.onBatchTranslationReceived('$transId', $partsJson, true); }");
+          } else {
+            final transId = data['id'] as String;
+            final text = data['text'] as String;
+            final result = await AppLocalizations.translateSingle(text, targetLang);
+            final escapedResult = result
+                .replaceAll("\\", "\\\\")
+                .replaceAll("'", "\\'")
+                .replaceAll('"', '\\"')
+                .replaceAll('\n', '\\n')
+                .replaceAll('\r', '\\r');
 
-          await _webViewController!.runJavaScript(
-              "if (window.onTranslationReceived) { window.onTranslationReceived('$transId', '$escapedResult', true); }");
+            await _webViewController!.runJavaScript(
+                "if (window.onTranslationReceived) { window.onTranslationReceived('$transId', '$escapedResult', true); }");
+          }
         } catch (e) {
           debugPrint('Error handling translation bridge: $e');
           try {
             final data = jsonDecode(message.message) as Map<String, dynamic>;
             final transId = data['id'] as String;
-            await _webViewController!.runJavaScript(
-                "if (window.onTranslationReceived) { window.onTranslationReceived('$transId', '', false); }");
+            final type = data['type'] as String?;
+            if (type == 'BATCH_TRANSLATE') {
+              await _webViewController!.runJavaScript(
+                  "if (window.onBatchTranslationReceived) { window.onBatchTranslationReceived('$transId', [], false); }");
+            } else {
+              await _webViewController!.runJavaScript(
+                  "if (window.onTranslationReceived) { window.onTranslationReceived('$transId', '', false); }");
+            }
           } catch (_) {}
         }
       },
@@ -213,9 +242,26 @@ class WhatsAppAccount {
         // Inject notification override script
         _webViewController!.runJavaScript(constants.notificationOverrideJS);
 
-        // Inject translation script
-        _webViewController!.runJavaScript(constants.translationJS);
-        await updateWebviewLanguage(settingsController.language);
+        final lang = settingsController.supportedLanguages.firstWhere(
+          (l) => l['code'] == settingsController.language,
+          orElse: () => {'name': 'English', 'code': 'en'},
+        );
+        String translatedLangName = lang['name']!;
+        if (settingsController.language != 'en') {
+          try {
+            translatedLangName = await AppLocalizations.translateSingle(lang['name']!, settingsController.language);
+          } catch (_) {}
+        }
+        final tooltipLabel = settingsController.localizations.get('translate_to_lang', args: {'lang': translatedLangName});
+
+        // Inject translation script with current language settings pre-populated
+        _webViewController!.runJavaScript(constants.getTranslationJS(
+          settingsController.language,
+          translatedLangName,
+          tooltipLabel,
+          settingsController.translateMessageButton,
+          settingsController.fullPageTranslation,
+        ));
       },
       onWebResourceError: (error) =>
           debugPrint("onWebResourceError: ${error.description}"),

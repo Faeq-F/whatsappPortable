@@ -21,15 +21,36 @@ void main() async {
   runApp(WhatsApp(settingsController: settingsController));
 }
 
-class WhatsApp extends StatelessWidget with TrayListener {
+class WhatsApp extends StatefulWidget {
   final SettingsController settingsController;
 
-  WhatsApp({
+  const WhatsApp({
     super.key,
     required this.settingsController,
-  }) {
+  });
+
+  @override
+  State<WhatsApp> createState() => _WhatsAppState();
+}
+
+class _WhatsAppState extends State<WhatsApp> with TrayListener {
+  @override
+  void initState() {
+    super.initState();
     createTrayTask();
     trayManager.addListener(this);
+    widget.settingsController.addListener(_onSettingsChanged);
+  }
+
+  @override
+  void dispose() {
+    trayManager.removeListener(this);
+    widget.settingsController.removeListener(_onSettingsChanged);
+    super.dispose();
+  }
+
+  void _onSettingsChanged() {
+    createTrayTask();
   }
 
   @override
@@ -54,16 +75,17 @@ class WhatsApp extends StatelessWidget with TrayListener {
     String iconPath = 'images/icon.ico';
     await trayManager.setIcon(iconPath);
     await trayManager.setToolTip('WhatsApp');
+    final loc = widget.settingsController.localizations;
     Menu menu = Menu(
       items: [
         MenuItem(
-            label: 'Toggle Window',
+            label: loc.get('toggle_window'),
             onClick: (MenuItem item) async {
               await toggleWindow();
             }),
          MenuItem.separator(),
         MenuItem(
-            label: 'Exit',
+            label: loc.get('exit'),
             onClick: (MenuItem item) {
               exit(0);
             })
@@ -75,22 +97,23 @@ class WhatsApp extends StatelessWidget with TrayListener {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-        listenable: settingsController,
+        listenable: widget.settingsController,
         builder: (BuildContext context, Widget? child) {
-          final isRtl = AppLanguages.isRtl(settingsController.language);
+          final isRtl = !widget.settingsController.keepAppInEnglish &&
+              AppLanguages.isRtl(widget.settingsController.language);
           return MaterialApp(
               debugShowCheckedModeBanner: false,
               restorationScopeId: 'app',
-              supportedLocales: AppLanguages.list.map((lang) => Locale(lang['code']!, '')).toList(),
+              supportedLocales: const [Locale('en', '')],
               theme: constants.lightTheme,
               darkTheme: constants.darkTheme,
-              themeMode: settingsController.themeMode,
+              themeMode: widget.settingsController.themeMode,
               navigatorKey: constants.navigatorKey,
               home: Directionality(
                 textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
                 child: Scaffold(
                     body: Browser(
-                  settingsController: settingsController,
+                  settingsController: widget.settingsController,
                 )),
               ),
               title: 'WhatsApp');

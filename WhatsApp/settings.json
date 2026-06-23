@@ -2,5 +2,9 @@
     "theme": "ThemeMode.system",
     "alwaysShowTabBar": true,
     "checkForUpdates": true,
-    "accounts": []
+    "accounts": [],
+    "language": "en",
+    "translateMessageButton": false,
+    "keepAppInEnglish": false,
+    "fullPageTranslation": true
 }

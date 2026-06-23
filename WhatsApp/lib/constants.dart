@@ -247,124 +247,128 @@ String notificationOverrideJS = """
   window.Notification = CustomNotification;
 })();
 """;
-
-String translationJS = """
+String getTranslationJS(String targetLangCode, String targetLangName, String tooltipLabel, bool enableHover, bool enableFullPage) {
+  final escapedTooltip = tooltipLabel.replaceAll("'", "\\'");
+  final escapedName = targetLangName.replaceAll("'", "\\'");
+  return """
 (function() {
-  if (window.__translationOverrideInstalled) return;
+  if (window.__translationOverrideInstalled) {
+    if (window.setTargetLanguage) {
+      window.setTargetLanguage('$targetLangCode', '$escapedName', '$escapedTooltip', $enableHover);
+    }
+    return;
+  }
   window.__translationOverrideInstalled = true;
 
-  window.__translationTargetLangCode = 'en';
-  window.__translationTargetLangName = 'English';
+  window.__translationTargetLangCode = '$targetLangCode';
+  window.__translationTargetLangName = '$escapedName';
+  window.__translationTooltipLabel = '$escapedTooltip';
+  window.__enableHoverTranslation = $enableHover;
+  if (window.__enableHoverTranslation) {
+    document.body.classList.remove('disable-hover-translation');
+  } else {
+    document.body.classList.add('disable-hover-translation');
+  }
 
-  window.setTargetLanguage = function(code, name) {
+  window.setTargetLanguage = function(code, name, tooltipLabel, enableHover) {
+    const oldCode = window.__translationTargetLangCode;
     window.__translationTargetLangCode = code;
     window.__translationTargetLangName = name;
+    window.__translationTooltipLabel = tooltipLabel || name;
+    window.__enableHoverTranslation = enableHover !== undefined ? enableHover : true;
+    if (window.__enableHoverTranslation) {
+      document.body.classList.remove('disable-hover-translation');
+    } else {
+      document.body.classList.add('disable-hover-translation');
+    }
+    const btns = document.querySelectorAll('.custom-translate-hover-btn');
+    btns.forEach(btn => {
+      btn.title = window.__translationTooltipLabel;
+    });
+    if (oldCode !== code && window.__fullPageTranslationActive) {
+      translatedNodes = new WeakSet();
+      scanAndTranslateDOM();
+    }
   };
 
-  document.addEventListener('contextmenu', function(e) {
-    if (window.__skipTranslationMenu) return;
-    const selectedText = window.getSelection().toString().trim();
-    const bubble = e.target.closest('.message-in, .message-out, [data-id], [class*="message"]');
-    if (selectedText || bubble) {
-      e.preventDefault();
-      e.stopPropagation();
-      showCustomContextMenu(e.clientX, e.clientY, selectedText, bubble, e.target);
+  const style = document.createElement('style');
+  style.innerHTML = `
+    .custom-translate-hover-btn {
+      position: absolute;
+      top: 6px;
+      width: 22px;
+      height: 22px;
+      background-color: #00a884;
+      border-radius: 50%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 999;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      color: white;
+      font-size: 12px;
+      user-select: none;
+      transition: background-color 0.2s;
     }
-  }, true);
+    .custom-translate-hover-btn:hover {
+      background-color: #008069;
+    }
+    body.disable-hover-translation .custom-translate-hover-btn {
+      display: none !important;
+    }
+    [data-testid^="conv-msg"] {
+      position: relative !important;
+    }
+    [data-testid^="conv-msg"]:hover .custom-translate-hover-btn {
+      display: flex !important;
+    }
+    @keyframes translatePulse {
+      0% { opacity: 0.4; }
+      50% { opacity: 1.0; }
+      100% { opacity: 0.4; }
+    }
+    .translation-body-text.loading {
+      animation: translatePulse 1.5s infinite ease-in-out;
+    }
+  `;
+  document.head.appendChild(style);
 
-  function showCustomContextMenu(x, y, selectedText, bubble, originalTarget) {
-    removeCustomContextMenu();
-
-    const menu = document.createElement('div');
-    menu.id = 'custom-webview-translation-menu';
-    menu.style.position = 'fixed';
-    menu.style.left = x + 'px';
-    menu.style.top = y + 'px';
-    const isDark = document.body.classList.contains('dark');
-    menu.style.backgroundColor = isDark ? '#233138' : '#ffffff';
-    menu.style.color = isDark ? '#e9edef' : '#111b21';
-    menu.style.border = '1px solid ' + (isDark ? '#374248' : '#e9edef');
-    menu.style.borderRadius = '8px';
-    menu.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-    menu.style.padding = '8px 0';
-    menu.style.zIndex = '10000';
-    menu.style.fontFamily = 'Segoe UI, Helvetica Neue, Helvetica, Lucida Grande, Arial, Ubuntu, Cantarell, Fira Sans, sans-serif';
-    menu.style.fontSize = '14px';
-    menu.style.minWidth = '160px';
-    menu.style.cursor = 'pointer';
-
-    const option = document.createElement('div');
-    const targetLangName = window.__translationTargetLangName || 'App Language';
-    option.innerText = 'Translate to ' + targetLangName;
-    option.style.padding = '8px 16px';
-    option.addEventListener('mouseenter', () => {
-      option.style.backgroundColor = isDark ? '#182229' : '#f0f2f5';
-    });
-    option.addEventListener('mouseleave', () => {
-      option.style.backgroundColor = 'transparent';
-    });
-
-    option.addEventListener('click', function() {
-      let textToTranslate = selectedText;
-      if (!textToTranslate && bubble) {
-        const copyable = bubble.querySelector('.copyable-text');
-        textToTranslate = copyable ? copyable.innerText : bubble.innerText;
+  document.addEventListener('mouseover', function(e) {
+    if (window.__enableHoverTranslation === false) return;
+    const bubble = e.target.closest('[data-testid="msg-container"]');
+    if (bubble && !bubble.querySelector('.custom-translate-hover-btn') && !bubble.closest('.custom-translation-bubble')) {
+      const btn = document.createElement('div');
+      btn.className = 'custom-translate-hover-btn';
+      btn.innerText = '🌐';
+      btn.title = window.__translationTooltipLabel || (window.__translationTargetLangName || 'App Language');
+      
+      const isOutgoing = bubble.firstElementChild && bubble.firstElementChild.getAttribute('data-testid') === 'tail-out';
+      if (isOutgoing) {
+        btn.style.left = '-55px';
+        btn.style.right = 'auto';
+      } else {
+        btn.style.right = '-55px';
+        btn.style.left = 'auto';
       }
-      if (textToTranslate) {
-        textToTranslate = textToTranslate.trim();
-        textToTranslate = textToTranslate.replace(/\\s*\\d{1,2}:\\d{2}\\s*(?:AM|PM|am|pm)?\\s*\$/g, '');
+      
+      btn.addEventListener('click', function(evt) {
+        evt.stopPropagation();
+        evt.preventDefault();
         
+        const selectableText = bubble.querySelector('.selectable-text');
+        let textToTranslate = selectableText ? selectableText.innerText : bubble.innerText;
         if (textToTranslate) {
-          performTranslation(textToTranslate, bubble || document.body);
+          textToTranslate = textToTranslate.trim();
+          textToTranslate = textToTranslate.replace(/\\s*\\d{1,2}:\\d{2}\\s*(?:AM|PM|am|pm)?\\s*\$/g, '');
+          if (textToTranslate) {
+            performTranslation(textToTranslate, bubble);
+          }
         }
-      }
-      removeCustomContextMenu();
-    });
-
-    menu.appendChild(option);
-
-    // Add option to trigger native/whatsapp menu
-    const optionsBtn = document.createElement('div');
-    optionsBtn.innerText = 'WhatsApp Options';
-    optionsBtn.style.padding = '8px 16px';
-    optionsBtn.addEventListener('mouseenter', () => {
-      optionsBtn.style.backgroundColor = isDark ? '#182229' : '#f0f2f5';
-    });
-    optionsBtn.addEventListener('mouseleave', () => {
-      optionsBtn.style.backgroundColor = 'transparent';
-    });
-    optionsBtn.addEventListener('click', function() {
-      removeCustomContextMenu();
-      window.__skipTranslationMenu = true;
-      const newEvent = new MouseEvent('contextmenu', {
-        bubbles: true,
-        cancelable: true,
-        clientX: x,
-        clientY: y,
-        view: window
       });
-      originalTarget.dispatchEvent(newEvent);
-      setTimeout(() => {
-        window.__skipTranslationMenu = false;
-      }, 100);
-    });
-    menu.appendChild(optionsBtn);
-
-    document.body.appendChild(menu);
-
-    const closeHandler = function() {
-      removeCustomContextMenu();
-      document.removeEventListener('click', closeHandler);
-    };
-    setTimeout(() => document.addEventListener('click', closeHandler), 10);
-  }
-
-  function removeCustomContextMenu() {
-    const existing = document.getElementById('custom-webview-translation-menu');
-    if (existing) {
-      existing.remove();
+      bubble.appendChild(btn);
     }
-  }
+  });
 
   function performTranslation(text, container) {
     const existing = container.querySelector('.custom-translation-bubble');
@@ -415,7 +419,7 @@ String translationJS = """
     transBubble.appendChild(header);
 
     const bodyText = document.createElement('div');
-    bodyText.className = 'translation-body-text';
+    bodyText.className = 'translation-body-text loading';
     bodyText.innerText = 'Translating...';
     transBubble.appendChild(bodyText);
 
@@ -433,14 +437,145 @@ String translationJS = """
     }
   }
 
+  window.translateAllMessages = function() {
+    const bubbles = document.querySelectorAll('[data-testid="msg-container"]');
+    bubbles.forEach(bubble => {
+      if (bubble.closest('.custom-translation-bubble')) return;
+      
+      const selectableText = bubble.querySelector('.selectable-text');
+      const text = selectableText ? selectableText.innerText : bubble.innerText;
+      if (text) {
+        let cleanText = text.trim();
+        cleanText = cleanText.replace(/\\s*\\d{1,2}:\\d{2}\\s*(?:AM|PM|am|pm)?\\s*\$/g, '');
+        if (cleanText && !bubble.querySelector('.custom-translation-bubble')) {
+          performTranslation(cleanText, bubble);
+        }
+      }
+    });
+  };
+
+  let translatedNodes = new WeakSet();
+  let isScanning = false;
+
+  function scanAndTranslateDOM() {
+    if (isScanning) return;
+    isScanning = true;
+
+    try {
+      const batchNodes = [];
+      const batchTexts = [];
+
+      function walk(node) {
+        if (node.nodeType === 3) {
+          const text = node.nodeValue.trim();
+          if (text.length > 0 && !/^\\d+\$/.test(text) && !/^\\d{1,2}:\\d{2}\$/.test(text) && !translatedNodes.has(node)) {
+            batchNodes.push(node);
+            batchTexts.push(text);
+          }
+        } else if (node.nodeType === 1) {
+          const tag = node.tagName.toLowerCase();
+          if (tag !== 'script' && tag !== 'style' && tag !== 'noscript' && tag !== 'iframe') {
+            const isWidget = node.classList && (node.classList.contains('custom-translate-hover-btn') || node.classList.contains('custom-translation-bubble'));
+            if (!isWidget) {
+              for (let child = node.firstChild; child; child = child.nextSibling) {
+                walk(child);
+              }
+            }
+          }
+        }
+      }
+
+      if (document.body) {
+        walk(document.body);
+      }
+
+      if (batchTexts.length === 0) {
+        isScanning = false;
+        return;
+      }
+
+      const chunkSize = 50;
+      for (let i = 0; i < batchTexts.length; i += chunkSize) {
+        const chunkNodes = batchNodes.slice(i, i + chunkSize);
+        const chunkTexts = batchTexts.slice(i, i + chunkSize);
+        
+        const transId = 'batch_' + Math.random().toString(36).substring(2, 9);
+        
+        window.__batchMap = window.__batchMap || {};
+        window.__batchMap[transId] = chunkNodes;
+
+        chunkNodes.forEach(n => translatedNodes.add(n));
+
+        try {
+          TranslationChannel.postMessage(JSON.stringify({
+            type: 'BATCH_TRANSLATE',
+            id: transId,
+            texts: chunkTexts,
+            targetLang: window.__translationTargetLangCode
+          }));
+        } catch (e) {
+          chunkNodes.forEach(n => translatedNodes.delete(n));
+        }
+      }
+    } catch (err) {
+      console.error("DOM translation error:", err);
+    }
+    
+    isScanning = false;
+  }
+
+  window.translatePage = function() {
+    if (window.__fullPageTranslationActive) return;
+    window.__fullPageTranslationActive = true;
+    
+    scanAndTranslateDOM();
+
+    const observer = new MutationObserver(() => {
+      scanAndTranslateDOM();
+    });
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
+  };
+
+  window.onBatchTranslationReceived = function(transId, translatedTexts, isSuccess) {
+    const nodes = window.__batchMap ? window.__batchMap[transId] : null;
+    if (nodes && isSuccess && translatedTexts.length === nodes.length) {
+      nodes.forEach((node, idx) => {
+        if (node && translatedTexts[idx]) {
+          const original = node.nodeValue;
+          const leadingWs = original.match(/^\\s*/)[0];
+          const trailingWs = original.match(/\\s*\$/)[0];
+          node.nodeValue = leadingWs + translatedTexts[idx] + trailingWs;
+          translatedNodes.add(node);
+        }
+      });
+    }
+    if (window.__batchMap) {
+      delete window.__batchMap[transId];
+    }
+  };
+
   window.onTranslationReceived = function(transId, translatedText, isSuccess) {
     const bubble = document.querySelector('[data-translation-id="' + transId + '"]');
     if (bubble) {
       const bodyText = bubble.querySelector('.translation-body-text');
       if (bodyText) {
+        bodyText.className = 'translation-body-text';
         bodyText.innerText = isSuccess ? translatedText : 'Translation failed';
       }
     }
   };
+
+  if ($enableFullPage) {
+    if (document.readyState === 'complete') {
+      window.translatePage();
+    } else {
+      window.addEventListener('load', () => window.translatePage());
+    }
+  }
 })();
 """;
+}

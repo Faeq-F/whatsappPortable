@@ -106,7 +106,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
                           child: DropdownButton<String>(
                             isExpanded: true,
                             value: widget.settingsController.language,
-                            items: AppLanguages.list.map((lang) {
+                            items: widget.settingsController.supportedLanguages.map((lang) {
                               return DropdownMenuItem<String>(
                                 value: lang['code'],
                                 child: Text(lang['name']!),
@@ -120,7 +120,18 @@ class _SettingsDialogState extends State<SettingsDialog> {
                                     // Notify webview of new language target
                                     final currentAccount = widget.accountManager.currentAccount;
                                     if (currentAccount != null) {
-                                      await currentAccount.updateWebviewLanguage(value);
+                                      final lang = widget.settingsController.supportedLanguages.firstWhere(
+                                        (l) => l['code'] == value,
+                                        orElse: () => {'name': 'English', 'code': 'en'},
+                                      );
+                                      String translatedLangName = lang['name']!;
+                                      if (value != 'en') {
+                                        try {
+                                          translatedLangName = await AppLocalizations.translateSingle(lang['name']!, value);
+                                        } catch (_) {}
+                                      }
+                                      final tooltipLabel = widget.settingsController.localizations.get('translate_to_lang', args: {'lang': translatedLangName});
+                                      await currentAccount.updateWebviewLanguage(value, translatedLangName, tooltipLabel, widget.settingsController.translateMessageButton);
                                     }
                                   },
                           ),
@@ -134,6 +145,109 @@ class _SettingsDialogState extends State<SettingsDialog> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             ),
                           ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: Row(
+                      children: [
+                        Checkbox(
+                          value: widget.settingsController.translateMessageButton,
+                          onChanged: (value) async {
+                            if (value != null) {
+                              await widget.settingsController
+                                  .updateTranslateMessageButton(value);
+                              // Notify webview
+                              final currentAccount =
+                                  widget.accountManager.currentAccount;
+                              if (currentAccount != null) {
+                                final lang = widget.settingsController
+                                    .supportedLanguages
+                                    .firstWhere(
+                                  (l) =>
+                                      l['code'] ==
+                                      widget.settingsController.language,
+                                  orElse: () =>
+                                      {'name': 'English', 'code': 'en'},
+                                );
+                                String translatedLangName = lang['name']!;
+                                if (widget.settingsController.language !=
+                                    'en') {
+                                  try {
+                                    translatedLangName =
+                                        await AppLocalizations.translateSingle(
+                                            lang['name']!,
+                                            widget.settingsController.language);
+                                  } catch (_) {}
+                                }
+                                final tooltipLabel = widget.settingsController
+                                    .localizations
+                                    .get('translate_to_lang', args: {
+                                  'lang': translatedLangName
+                                });
+                                await currentAccount.updateWebviewLanguage(
+                                  widget.settingsController.language,
+                                  translatedLangName,
+                                  tooltipLabel,
+                                  value,
+                                );
+                              }
+                            }
+                          },
+                        ),
+                        Text(loc.get('translate_message_button')),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: Row(
+                      children: [
+                        Checkbox(
+                          value: widget.settingsController.keepAppInEnglish,
+                          onChanged: (value) async {
+                            if (value != null) {
+                              await widget.settingsController
+                                  .updateKeepAppInEnglish(value);
+                            }
+                          },
+                        ),
+                        Expanded(
+                          child: Text(loc.get('keep_app_in_english')),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: Row(
+                      children: [
+                        Checkbox(
+                          value: widget.settingsController.fullPageTranslation,
+                          onChanged: (value) async {
+                            if (value != null) {
+                              await widget.settingsController
+                                  .updateFullPageTranslation(value);
+                              final currentAccount =
+                                  widget.accountManager.currentAccount;
+                              if (currentAccount != null) {
+                                if (value) {
+                                  await currentAccount.webViewController.runJavaScript(
+                                      "if (window.translatePage) { window.translatePage(); }");
+                                } else {
+                                  await currentAccount.webViewController.reload();
+                                }
+                              }
+                            }
+                          },
+                        ),
+                        Expanded(
+                          child: Text(loc.get('full_page_translation')),
+                        ),
                       ],
                     ),
                   ),
