@@ -4,7 +4,8 @@
     "checkForUpdates": true,
     "accounts": [],
     "language": "en",
-    "translateMessageButton": false,
-    "keepAppInEnglish": false,
-    "fullPageTranslation": true
+    "keepAppInEnglish": true,
+    "fullPageTranslation": false,
+    "showTranslateAllMessagesButton": false,
+    "translateMessageButton": false
 }

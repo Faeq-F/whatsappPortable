@@ -11,20 +11,18 @@ The [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webv
 - No installation required
 - All data stored in the relocatable app folder (making it truly portable)
 - Use multiple WhatsApp accounts simultaneously
+- Support for multiple languages & translations ([via the <span style="color:red">Google Translate</span> API](https://docs.cloud.google.com/translate/docs/reference/rest))
 - Notifications support
 - Themes: Light / Dark / System modes
 - DevTools access
 
 ### Screenshots:
 
-![App Screenshot in light mode](https://raw.githubusercontent.com/Faeq-F/whatsappPortable/main/docs/WhatsappPortable.png)
-
-![App Screenshot in dark mode](https://raw.githubusercontent.com/Faeq-F/whatsappPortable/main/docs/WhatsappPortable-Dark.png)
-
-![App Screenshot when logging in](https://raw.githubusercontent.com/Faeq-F/whatsappPortable/main/docs/WhatsappPortable-Login.png)
-
-![App Screenshot - settings dialog showing multiple accounts](https://raw.githubusercontent.com/Faeq-F/whatsappPortable/main/docs/WhatsappPortable-MultipleAccounts.png)
-
-![App Screenshot - update check dialog (light mode)](https://raw.githubusercontent.com/Faeq-F/whatsappPortable/main/docs/WhatsappPortable-UpToDate.png)
-
-![App Screenshot - update check dialog (dark mode)](https://raw.githubusercontent.com/Faeq-F/whatsappPortable/main/docs/WhatsappPortable-UpToDate-Dark.png)
+| | |
+| :---: | :---: |
+| ![App Screenshot in light mode](https://raw.githubusercontent.com/Faeq-F/whatsappPortable/main/docs/WhatsappPortable.png) | ![App Screenshot in dark mode](https://raw.githubusercontent.com/Faeq-F/whatsappPortable/main/docs/WhatsappPortable-Dark.png) |
+| Light mode | Dark mode |
+| ![App Screenshot when logging in](https://raw.githubusercontent.com/Faeq-F/whatsappPortable/main/docs/WhatsappPortable-Login.png) | ![App Screenshot - settings dialog showing multiple accounts](https://raw.githubusercontent.com/Faeq-F/whatsappPortable/main/docs/WhatsappPortable-MultipleAccounts.png) |
+| Logging in | Settings dialog with multiple accounts |
+| ![App Screenshot - update check dialog (light mode)](https://raw.githubusercontent.com/Faeq-F/whatsappPortable/main/docs/WhatsappPortable-UpToDate.png) | ![App Screenshot - update check dialog (dark mode)](https://raw.githubusercontent.com/Faeq-F/whatsappPortable/main/docs/WhatsappPortable-UpToDate-Dark.png) |
+| Update check dialog (light mode) | Update check dialog (dark mode) |

@@ -57,6 +57,11 @@ class _Browser extends State<Browser> with WindowListener {
       });
     }
     _updateWebViewVisibility();
+
+    if (currentAccount != null && widget.settingsController.fullPageTranslation) {
+      await currentAccount.webViewController.runJavaScript(
+          "if (window.translatePage) { window.translatePage(); }");
+    }
   }
 
   void _updateWebViewVisibility() {

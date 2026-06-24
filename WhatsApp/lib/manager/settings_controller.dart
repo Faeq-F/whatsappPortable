@@ -24,6 +24,9 @@ class SettingsController with ChangeNotifier {
   bool _fullPageTranslation = false;
   bool get fullPageTranslation => _fullPageTranslation;
 
+  bool _showTranslateAllMessagesButton = true;
+  bool get showTranslateAllMessagesButton => _showTranslateAllMessagesButton;
+
   String _language = 'en';
   String get language => _language;
 
@@ -38,6 +41,8 @@ class SettingsController with ChangeNotifier {
 
   bool _isTranslating = false;
   bool get isTranslating => _isTranslating;
+
+  Map<String, Map<String, String>> _cachedTranslations = {};
 
   Future<File> get _settingsFile async {
     final path = Directory.current.path;
@@ -63,7 +68,7 @@ class SettingsController with ChangeNotifier {
 
   Future<void> writeSettings(Map<String, dynamic> settings) async {
     final file = await _settingsFile;
-    await file.writeAsString(jsonEncode(settings));
+    await file.writeAsString(const JsonEncoder.withIndent('    ').convert(settings));
   }
 
   Future<void> loadSettings() async {
@@ -87,6 +92,7 @@ class SettingsController with ChangeNotifier {
     _translateMessageButton = settings['translateMessageButton'] ?? settings['enableHoverTranslation'] ?? true;
     _keepAppInEnglish = settings['keepAppInEnglish'] ?? settings['translateContentOnly'] ?? false;
     _fullPageTranslation = settings['fullPageTranslation'] ?? settings['enableFullPageTranslation'] ?? false;
+    _showTranslateAllMessagesButton = settings['showTranslateAllMessagesButton'] ?? true;
     _language = settings['language'] ?? 'en';
 
     final cacheFile = await _cacheFile;
@@ -102,6 +108,7 @@ class SettingsController with ChangeNotifier {
       }
     }
 
+    _cachedTranslations = {};
     if (cacheData != null) {
       final cachedLangs = cacheData['supported_languages'] as List<dynamic>?;
       if (cachedLangs != null) {
@@ -110,22 +117,22 @@ class SettingsController with ChangeNotifier {
             .toList();
       }
 
-      if (cacheData['cached_language'] == _language) {
-        final cached = cacheData['translations'] as Map<String, dynamic>?;
-        final hasAllKeys = cached != null &&
-            AppLocalizations.enStrings.keys.every((key) => cached.containsKey(key));
-        if (hasAllKeys && !_keepAppInEnglish) {
-          _localizations =
-              AppLocalizations(cached.map((k, v) => MapEntry(k, v.toString())));
-        } else {
-          _fallbackOrLoadTranslations();
-        }
-      } else {
-        _fallbackOrLoadTranslations();
+      // Handle migration of legacy caching structures
+      final Map<String, dynamic> tempCachedMap = {};
+      if (cacheData['cached_translations'] != null) {
+        tempCachedMap.addAll(cacheData['cached_translations'] as Map<String, dynamic>);
+      } else if (cacheData['cached_language'] != null && cacheData['translations'] != null) {
+        tempCachedMap[cacheData['cached_language'] as String] = cacheData['translations'];
       }
-    } else {
-      _fallbackOrLoadTranslations();
+
+      tempCachedMap.forEach((langCode, val) {
+        if (val is Map) {
+          _cachedTranslations[langCode] = val.map((k, v) => MapEntry(k.toString(), v.toString()));
+        }
+      });
     }
+
+    _fallbackOrLoadTranslations();
 
     _loadSupportedLanguagesAsync();
 
@@ -149,7 +156,10 @@ class SettingsController with ChangeNotifier {
           } catch (_) {}
         }
         cacheData['supported_languages'] = langs;
-        await cacheFile.writeAsString(jsonEncode(cacheData));
+        cacheData['cached_translations'] = _cachedTranslations;
+        cacheData.remove('cached_language');
+        cacheData.remove('translations');
+        await cacheFile.writeAsString(const JsonEncoder.withIndent('    ').convert(cacheData));
         notifyListeners();
       }
     } catch (e) {
@@ -160,6 +170,14 @@ class SettingsController with ChangeNotifier {
   void _fallbackOrLoadTranslations() {
     if (_language == 'en' || _keepAppInEnglish) {
       _localizations = AppLocalizations(AppLocalizations.enStrings);
+    } else if (_cachedTranslations.containsKey(_language)) {
+      final cached = _cachedTranslations[_language]!;
+      final hasAllKeys = AppLocalizations.enStrings.keys.every((key) => cached.containsKey(key));
+      if (hasAllKeys) {
+        _localizations = AppLocalizations(cached);
+      } else {
+        _loadTranslationsAsync(_language);
+      }
     } else {
       _loadTranslationsAsync(_language);
     }
@@ -171,6 +189,7 @@ class SettingsController with ChangeNotifier {
     try {
       final fetched = await AppLocalizations.fetchTranslations(langCode);
       _localizations = AppLocalizations(fetched);
+      _cachedTranslations[langCode] = fetched;
 
       final cacheFile = await _cacheFile;
       Map<String, dynamic> cacheData = {};
@@ -182,9 +201,10 @@ class SettingsController with ChangeNotifier {
           }
         } catch (_) {}
       }
-      cacheData['cached_language'] = langCode;
-      cacheData['translations'] = fetched;
-      await cacheFile.writeAsString(jsonEncode(cacheData));
+      cacheData['cached_translations'] = _cachedTranslations;
+      cacheData.remove('cached_language');
+      cacheData.remove('translations');
+      await cacheFile.writeAsString(const JsonEncoder.withIndent('    ').convert(cacheData));
     } catch (e) {
       debugPrint('Failed to load translations async: $e');
     } finally {
@@ -264,6 +284,14 @@ class SettingsController with ChangeNotifier {
     settings['fullPageTranslation'] = value;
     await writeSettings(settings);
     _fullPageTranslation = value;
+    notifyListeners();
+  }
+
+  Future<void> updateShowTranslateAllMessagesButton(bool value) async {
+    final settings = await readSettings();
+    settings['showTranslateAllMessagesButton'] = value;
+    await writeSettings(settings);
+    _showTranslateAllMessagesButton = value;
     notifyListeners();
   }
 }

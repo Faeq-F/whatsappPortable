@@ -247,7 +247,8 @@ String notificationOverrideJS = """
   window.Notification = CustomNotification;
 })();
 """;
-String getTranslationJS(String targetLangCode, String targetLangName, String tooltipLabel, bool enableHover, bool enableFullPage) {
+String getTranslationJS(String targetLangCode, String targetLangName,
+    String tooltipLabel, bool enableHover, bool enableFullPage) {
   final escapedTooltip = tooltipLabel.replaceAll("'", "\\'");
   final escapedName = targetLangName.replaceAll("'", "\\'");
   return """
@@ -296,23 +297,23 @@ String getTranslationJS(String targetLangCode, String targetLangName, String too
     .custom-translate-hover-btn {
       position: absolute;
       top: 6px;
-      width: 22px;
-      height: 22px;
-      background-color: #00a884;
+      width: 28px;
+      height: 28px;
+      background-color: transparent;
       border-radius: 50%;
       display: none;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       z-index: 999;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-      color: white;
+      box-shadow: none;
+      color: #8696a0;
       font-size: 12px;
       user-select: none;
       transition: background-color 0.2s;
     }
     .custom-translate-hover-btn:hover {
-      background-color: #008069;
+      background-color: rgba(0,0,0,0.1);
     }
     body.disable-hover-translation .custom-translate-hover-btn {
       display: none !important;
@@ -340,15 +341,15 @@ String getTranslationJS(String targetLangCode, String targetLangName, String too
     if (bubble && !bubble.querySelector('.custom-translate-hover-btn') && !bubble.closest('.custom-translation-bubble')) {
       const btn = document.createElement('div');
       btn.className = 'custom-translate-hover-btn';
-      btn.innerText = '🌐';
+      btn.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95c-.32-1.25-.78-2.45-1.38-3.56 1.84.63 3.37 1.91 4.33 3.56zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.34-.14 2 0 .66.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56-1.84-.63-3.37-1.91-4.33-3.56zm2.95-8H5.08c.96-1.65 2.49-2.93 4.33-3.56C8.81 5.55 8.35 6.75 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.34-.16-2 0-.66.07-1.34.16-2h4.68c.09.66.16 1.34.16 2 0 .66-.07 1.34-.16 2zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95c-.96 1.65-2.49 2.93-4.33 3.56zM16.36 14c.08-.66.14-1.34.14-2 0-.66-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z"/></svg>`;
       btn.title = window.__translationTooltipLabel || (window.__translationTargetLangName || 'App Language');
       
       const isOutgoing = bubble.firstElementChild && bubble.firstElementChild.getAttribute('data-testid') === 'tail-out';
       if (isOutgoing) {
-        btn.style.left = '-55px';
+        btn.style.left = '-65px';
         btn.style.right = 'auto';
       } else {
-        btn.style.right = '-55px';
+        btn.style.right = '-65px';
         btn.style.left = 'auto';
       }
       

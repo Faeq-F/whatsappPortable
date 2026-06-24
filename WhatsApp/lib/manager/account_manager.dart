@@ -40,6 +40,8 @@ class AccountManager with ChangeNotifier {
 
     if (accountsData == null || accountsData.isEmpty) {
       await _createDefaultAccount();
+      final activeIds = _accounts.map((a) => a.id).toList();
+      await _cleanupUnusedProfiles(activeIds);
       return;
     }
 
@@ -47,6 +49,9 @@ class AccountManager with ChangeNotifier {
       _accounts = accountsData
           .map((accountData) => WhatsAppAccount.fromJson(accountData))
           .toList();
+
+      final activeIds = _accounts.map((a) => a.id).toList();
+      await _cleanupUnusedProfiles(activeIds);
 
       for (var account in _accounts) {
         account.initializeWebViewController();
@@ -69,6 +74,35 @@ class AccountManager with ChangeNotifier {
     } catch (e) {
       debugPrint('Error loading accounts: $e');
       await _createDefaultAccount();
+    }
+  }
+
+  Future<void> _cleanupUnusedProfiles(List<String> activeIds) async {
+    try {
+      final ebWebViewDir = Directory(
+          '${WhatsAppAccount.sharedDataDirectory}\\EBWebView');
+      if (!await ebWebViewDir.exists()) return;
+
+      final List<FileSystemEntity> entities = await ebWebViewDir.list().toList();
+      for (final entity in entities) {
+        if (entity is Directory) {
+          final String dirName = entity.path.split(Platform.pathSeparator).last;
+          if (dirName.startsWith('WV2Profile_')) {
+            final profileId = dirName.substring('WV2Profile_'.length);
+            if (!activeIds.contains(profileId)) {
+              debugPrint('Found unused profile directory: $dirName. Deleting...');
+              try {
+                await entity.delete(recursive: true);
+                debugPrint('Successfully deleted unused profile directory: $dirName');
+              } catch (e) {
+                debugPrint('Failed to delete unused profile directory $dirName: $e');
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error during unused profiles cleanup: $e');
     }
   }
 

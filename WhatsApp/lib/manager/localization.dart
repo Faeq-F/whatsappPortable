@@ -83,6 +83,9 @@ class AppLocalizations {
     'translate_message_button': 'Translate message button ',
     'keep_app_in_english': 'Keep app UI in English',
     'full_page_translation': 'Translate entire page',
+    'show_translate_all_messages_button':
+        'Title bar translate all messages button',
+    'reload_active_tab': 'Reload active tab',
   };
 
   String get(String key, {Map<String, String>? args}) {

@@ -154,6 +154,74 @@ class _SettingsDialogState extends State<SettingsDialog> {
                     child: Row(
                       children: [
                         Checkbox(
+                          value: widget.settingsController.keepAppInEnglish,
+                          onChanged: (value) async {
+                            if (value != null) {
+                              await widget.settingsController
+                                  .updateKeepAppInEnglish(value);
+                            }
+                          },
+                        ),
+                        Expanded(
+                          child: Text(loc.get('keep_app_in_english')),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: Row(
+                      children: [
+                        Checkbox(
+                          value: widget.settingsController.fullPageTranslation,
+                          onChanged: (value) async {
+                            if (value != null) {
+                              await widget.settingsController
+                                  .updateFullPageTranslation(value);
+                              for (final account in widget.accountManager.accounts) {
+                                if (value) {
+                                  await account.webViewController.runJavaScript(
+                                      "if (window.translatePage) { window.translatePage(); }");
+                                } else {
+                                  await account.webViewController.reload();
+                                }
+                              }
+                            }
+                          },
+                        ),
+                        Expanded(
+                          child: Text(loc.get('full_page_translation')),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: Row(
+                      children: [
+                        Checkbox(
+                          value: widget.settingsController.showTranslateAllMessagesButton,
+                          onChanged: (value) async {
+                            if (value != null) {
+                              await widget.settingsController
+                                  .updateShowTranslateAllMessagesButton(value);
+                            }
+                          },
+                        ),
+                        Expanded(
+                          child: Text(loc.get('show_translate_all_messages_button')),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: Row(
+                      children: [
+                        Checkbox(
                           value: widget.settingsController.translateMessageButton,
                           onChanged: (value) async {
                             if (value != null) {
@@ -198,56 +266,6 @@ class _SettingsDialogState extends State<SettingsDialog> {
                           },
                         ),
                         Text(loc.get('translate_message_button')),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    child: Row(
-                      children: [
-                        Checkbox(
-                          value: widget.settingsController.keepAppInEnglish,
-                          onChanged: (value) async {
-                            if (value != null) {
-                              await widget.settingsController
-                                  .updateKeepAppInEnglish(value);
-                            }
-                          },
-                        ),
-                        Expanded(
-                          child: Text(loc.get('keep_app_in_english')),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    child: Row(
-                      children: [
-                        Checkbox(
-                          value: widget.settingsController.fullPageTranslation,
-                          onChanged: (value) async {
-                            if (value != null) {
-                              await widget.settingsController
-                                  .updateFullPageTranslation(value);
-                              final currentAccount =
-                                  widget.accountManager.currentAccount;
-                              if (currentAccount != null) {
-                                if (value) {
-                                  await currentAccount.webViewController.runJavaScript(
-                                      "if (window.translatePage) { window.translatePage(); }");
-                                } else {
-                                  await currentAccount.webViewController.reload();
-                                }
-                              }
-                            }
-                          },
-                        ),
-                        Expanded(
-                          child: Text(loc.get('full_page_translation')),
-                        ),
                       ],
                     ),
                   ),
@@ -348,22 +366,42 @@ class _SettingsDialogState extends State<SettingsDialog> {
                   Padding(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.open_in_new, size: 18),
-                        label: Text(loc.get('debug_active_tab')),
-                        onPressed: () {
-                          final currentAccount =
-                              widget.accountManager.currentAccount;
-                          if (currentAccount != null) {
-                            (currentAccount.webViewController.platform
-                                    as WindowsPlatformWebViewController)
-                                .openDevTools();
-                          }
-                          Navigator.pop(context);
-                        },
-                      ),
+                    child: Column(
+                      children: [
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            icon: const Icon(Icons.open_in_new, size: 18),
+                            label: Text(loc.get('debug_active_tab')),
+                            onPressed: () {
+                              final currentAccount =
+                                  widget.accountManager.currentAccount;
+                              if (currentAccount != null) {
+                                (currentAccount.webViewController.platform
+                                        as WindowsPlatformWebViewController)
+                                    .openDevTools();
+                              }
+                              Navigator.pop(context);
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            icon: const Icon(Icons.refresh, size: 18),
+                            label: Text(loc.get('reload_active_tab')),
+                            onPressed: () {
+                              final currentAccount =
+                                  widget.accountManager.currentAccount;
+                              if (currentAccount != null) {
+                                currentAccount.webViewController.reload();
+                              }
+                              Navigator.pop(context);
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

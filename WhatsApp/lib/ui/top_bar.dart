@@ -43,25 +43,28 @@ class DraggableAppBar extends StatelessWidget implements PreferredSizeWidget {
                 },
               ),
             ),
-            const SizedBox(width: 4),
-            SizedBox(
-              height: 25,
-              width: 25,
-              child: IconButton(
-                color: Theme.of(context).hintColor,
-                icon: const Icon(Icons.g_translate),
-                tooltip: settingsController.localizations.get('translate_all_messages'),
-                iconSize: 15,
-                padding: EdgeInsets.zero,
-                onPressed: () async {
-                  final currentAccount = accountManager.currentAccount;
-                  if (currentAccount != null) {
-                    await currentAccount.webViewController.runJavaScript(
-                        "if (window.translateAllMessages) { window.translateAllMessages(); }");
-                  }
-                },
+            if (settingsController.showTranslateAllMessagesButton) ...[
+              const SizedBox(width: 4),
+              SizedBox(
+                height: 25,
+                width: 25,
+                child: IconButton(
+                  color: Theme.of(context).hintColor,
+                  icon: const Icon(Icons.language),
+                  tooltip: settingsController.localizations
+                      .get('translate_all_messages'),
+                  iconSize: 15,
+                  padding: EdgeInsets.zero,
+                  onPressed: () async {
+                    final currentAccount = accountManager.currentAccount;
+                    if (currentAccount != null) {
+                      await currentAccount.webViewController.runJavaScript(
+                          "if (window.translateAllMessages) { window.translateAllMessages(); }");
+                    }
+                  },
+                ),
               ),
-            ),
+            ],
           ]),
         ),
         DragToMoveArea(
