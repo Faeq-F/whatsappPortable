@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:local_notifier/local_notifier.dart';
 import 'package:whatsapp/ui/browser.dart';
 import 'package:whatsapp/manager/settings_controller.dart';
 import 'package:whatsapp/manager/localization.dart';
@@ -10,7 +11,12 @@ import 'constants.dart' as constants;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  await localNotifier.setup(
+    appName: 'WhatsApp',
+  );
+
   final settingsController = SettingsController();
+
 
   await settingsController.loadSettings();
   await windowManager.ensureInitialized();

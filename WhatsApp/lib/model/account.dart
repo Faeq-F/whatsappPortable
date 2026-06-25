@@ -8,6 +8,7 @@ import 'package:whatsapp/constants.dart' as constants;
 import 'package:whatsapp/manager/settings_controller.dart';
 import 'package:whatsapp/manager/localization.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:local_notifier/local_notifier.dart';
 
 class WhatsAppAccount {
   final String id;
@@ -16,6 +17,8 @@ class WhatsAppAccount {
   bool isActive;
   bool _webViewSetupDone = false;
   bool hasNotification = false;
+  final Set<String> _activeNotificationIds = {};
+  final Map<String, LocalNotification> _nativeNotifications = {};
 
   static String get sharedDataDirectory =>
       '${Directory.current.path}\\data\\webview';
@@ -94,7 +97,8 @@ class WhatsAppAccount {
     }
   }
 
-  Future<void> updateWebviewLanguage(String langCode, String langName, String translateTooltipLabel, bool enableHover) async {
+  Future<void> updateWebviewLanguage(String langCode, String langName,
+      String translateTooltipLabel, bool enableHover) async {
     if (_webViewController == null) return;
     try {
       await _webViewController!.runJavaScript(
@@ -125,17 +129,19 @@ class WhatsAppAccount {
           if (type == 'BATCH_TRANSLATE') {
             final transId = data['id'] as String;
             final texts = List<String>.from(data['texts'] as List);
-            
+
             // Join segments with \n###\n
             final combinedText = texts.join('\n###\n');
-            final result = await AppLocalizations.translateSingle(combinedText, targetLang);
-            
+            final result = await AppLocalizations.translateSingle(
+                combinedText, targetLang);
+
             final RegExp separatorPattern = RegExp(r'\n\s*###\s*\n');
             final translatedParts = result.split(separatorPattern);
-            
+
             final List<String> cleanParts = [];
             for (var i = 0; i < texts.length; i++) {
-              String part = i < translatedParts.length ? translatedParts[i] : texts[i];
+              String part =
+                  i < translatedParts.length ? translatedParts[i] : texts[i];
               if (part.isEmpty) part = texts[i];
               cleanParts.add(part);
             }
@@ -145,7 +151,8 @@ class WhatsAppAccount {
           } else {
             final transId = data['id'] as String;
             final text = data['text'] as String;
-            final result = await AppLocalizations.translateSingle(text, targetLang);
+            final result =
+                await AppLocalizations.translateSingle(text, targetLang);
             final jsonResult = jsonEncode(result);
 
             await _webViewController!.runJavaScript(
@@ -176,31 +183,138 @@ class WhatsAppAccount {
         try {
           final data = jsonDecode(message.message) as Map<String, dynamic>;
           final type = data['type'] as String;
-          final remainingCount = data['remainingCount'] as int? ?? 0;
 
           if (type == 'NOTIFICATION_RECEIVED') {
+            final notificationId = data['id'] as String;
+            _activeNotificationIds.add(notificationId);
+
             hasNotification = true;
-            debugPrint(
-                'Notification received on account $id: ${data['title']}');
             onNotificationChanged?.call(id, true);
-          } else if (type == 'NOTIFICATION_CLOSED') {
-            hasNotification = remainingCount > 0;
-            debugPrint(
-                'Notification closed on account $id, remaining: $remainingCount');
-            onNotificationChanged?.call(id, hasNotification);
-          } else if (type == 'NOTIFICATION_CLICKED') {
-            debugPrint('Notification clicked on account $id');
-            try {
-              if (await windowManager.isMinimized()) {
-                await windowManager.restore();
+
+            final String originalTitle = data['title'] as String? ?? '';
+            final String originalBody = data['body'] as String? ?? '';
+
+            // Handle translation based on settings
+            String displayBody = originalBody;
+            if (settingsController.translateNotifications &&
+                settingsController.language != 'en') {
+              try {
+                displayBody = await AppLocalizations.translateSingle(
+                    originalBody, settingsController.language);
+              } catch (e) {
+                debugPrint('Failed to translate notification body: $e');
               }
-              await windowManager.show();
-              await windowManager.focus();
-              await windowManager.setAlwaysOnTop(true);
-              await windowManager.setAlwaysOnTop(false);
-            } catch (e) {
-              debugPrint('Error showing window on notification click: $e');
             }
+
+            final List<LocalNotificationAction> actions = [];
+            if (!settingsController.translateNotifications &&
+                settingsController.showTranslateNotificationButton &&
+                settingsController.language != 'en') {
+              actions.add(LocalNotificationAction(text: 'Translate'));
+            }
+
+            final localNotif = LocalNotification(
+              title: originalTitle,
+              body: displayBody,
+              actions: actions,
+            );
+
+            localNotif.onClick = () async {
+              debugPrint('LocalNotification onClick: $notificationId');
+              _activeNotificationIds.remove(notificationId);
+              _nativeNotifications.remove(notificationId);
+              hasNotification = _activeNotificationIds.isNotEmpty;
+              onNotificationChanged?.call(id, hasNotification);
+
+              // Restore and focus the window
+              try {
+                if (await windowManager.isMinimized()) {
+                  await windowManager.restore();
+                }
+                await windowManager.show();
+                await windowManager.focus();
+                await windowManager.setAlwaysOnTop(true);
+                await windowManager.setAlwaysOnTop(false);
+              } catch (e) {
+                debugPrint('Error showing window on notification click: $e');
+              }
+              // Dispatch notification click event to JS
+              await _webViewController?.runJavaScript(
+                  "if (window.onNotificationClicked) { window.onNotificationClicked('$notificationId'); }");
+            };
+
+            localNotif.onClose = (closeReason) async {
+              debugPrint('LocalNotification onClose: $notificationId, reason: $closeReason');
+              if (closeReason == LocalNotificationCloseReason.timedOut) {
+                // If it timed out, it went to the Action Center, so keep it active!
+                return;
+              }
+              _activeNotificationIds.remove(notificationId);
+              _nativeNotifications.remove(notificationId);
+              hasNotification = _activeNotificationIds.isNotEmpty;
+              onNotificationChanged?.call(id, hasNotification);
+
+              await _webViewController?.runJavaScript(
+                  "if (window.onNotificationClosedFromServer) { window.onNotificationClosedFromServer('$notificationId'); }");
+            };
+
+            if (actions.isNotEmpty) {
+              localNotif.onClickAction = (actionIndex) async {
+                debugPrint('LocalNotification onClickAction: $notificationId, index: $actionIndex');
+                if (actionIndex == 0) {
+                  // "Translate" was clicked
+                  localNotif.onClose = (reason) {
+                    debugPrint('LocalNotification overridden onClose ran for: $notificationId');
+                  }; // Disable close tracking temporarily for this native popup
+                  await localNotif.close();
+                  _nativeNotifications.remove(notificationId);
+
+                  String translatedBody = originalBody;
+                  try {
+                    translatedBody = await AppLocalizations.translateSingle(
+                        originalBody, settingsController.language);
+                  } catch (e) {
+                    debugPrint('Failed to translate notification body: $e');
+                  }
+
+                  final translatedNotif = LocalNotification(
+                    title: originalTitle,
+                    body: translatedBody,
+                  );
+
+                  translatedNotif.onClick = localNotif.onClick;
+                  translatedNotif.onClose = (closeReason) async {
+                    debugPrint('TranslatedNotification onClose: $notificationId, reason: $closeReason');
+                    if (closeReason == LocalNotificationCloseReason.timedOut) {
+                      // Keep it active in the Action Center
+                      return;
+                    }
+                    _activeNotificationIds.remove(notificationId);
+                    _nativeNotifications.remove(notificationId);
+                    hasNotification = _activeNotificationIds.isNotEmpty;
+                    onNotificationChanged?.call(id, hasNotification);
+
+                    await _webViewController?.runJavaScript(
+                        "if (window.onNotificationClosedFromServer) { window.onNotificationClosedFromServer('$notificationId'); }");
+                  };
+                  _nativeNotifications[notificationId] = translatedNotif;
+                  await translatedNotif.show();
+                }
+              };
+            }
+
+            _nativeNotifications[notificationId] = localNotif;
+            await localNotif.show();
+          } else if (type == 'NOTIFICATION_CLOSED') {
+            final notificationId = data['id'] as String;
+            debugPrint('NOTIFICATION_CLOSED from JS: $notificationId');
+            _activeNotificationIds.remove(notificationId);
+            final nativeNotif = _nativeNotifications.remove(notificationId);
+            if (nativeNotif != null) {
+              await nativeNotif.close();
+            }
+            hasNotification = _activeNotificationIds.isNotEmpty;
+            onNotificationChanged?.call(id, hasNotification);
           }
         } catch (e) {
           debugPrint('Error parsing notification message: $e');
@@ -239,10 +353,12 @@ class WhatsAppAccount {
         String translatedLangName = lang['name']!;
         if (settingsController.language != 'en') {
           try {
-            translatedLangName = await AppLocalizations.translateSingle(lang['name']!, settingsController.language);
+            translatedLangName = await AppLocalizations.translateSingle(
+                lang['name']!, settingsController.language);
           } catch (_) {}
         }
-        final tooltipLabel = settingsController.localizations.get('translate_to_lang', args: {'lang': translatedLangName});
+        final tooltipLabel = settingsController.localizations
+            .get('translate_to_lang', args: {'lang': translatedLangName});
 
         // Inject translation script with current language settings pre-populated
         _webViewController!.runJavaScript(constants.getTranslationJS(

@@ -27,6 +27,12 @@ class SettingsController with ChangeNotifier {
   bool _showTranslateAllMessagesButton = true;
   bool get showTranslateAllMessagesButton => _showTranslateAllMessagesButton;
 
+  bool _translateNotifications = true;
+  bool get translateNotifications => _translateNotifications;
+
+  bool _showTranslateNotificationButton = false;
+  bool get showTranslateNotificationButton => _showTranslateNotificationButton;
+
   String _language = 'en';
   String get language => _language;
 
@@ -93,6 +99,8 @@ class SettingsController with ChangeNotifier {
     _keepAppInEnglish = settings['keepAppInEnglish'] ?? settings['translateContentOnly'] ?? false;
     _fullPageTranslation = settings['fullPageTranslation'] ?? settings['enableFullPageTranslation'] ?? false;
     _showTranslateAllMessagesButton = settings['showTranslateAllMessagesButton'] ?? true;
+    _translateNotifications = settings['translateNotifications'] ?? true;
+    _showTranslateNotificationButton = settings['showTranslateNotificationButton'] ?? false;
     _language = settings['language'] ?? 'en';
 
     final cacheFile = await _cacheFile;
@@ -292,6 +300,22 @@ class SettingsController with ChangeNotifier {
     settings['showTranslateAllMessagesButton'] = value;
     await writeSettings(settings);
     _showTranslateAllMessagesButton = value;
+    notifyListeners();
+  }
+
+  Future<void> updateTranslateNotifications(bool value) async {
+    final settings = await readSettings();
+    settings['translateNotifications'] = value;
+    await writeSettings(settings);
+    _translateNotifications = value;
+    notifyListeners();
+  }
+
+  Future<void> updateShowTranslateNotificationButton(bool value) async {
+    final settings = await readSettings();
+    settings['showTranslateNotificationButton'] = value;
+    await writeSettings(settings);
+    _showTranslateNotificationButton = value;
     notifyListeners();
   }
 }

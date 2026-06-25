@@ -86,6 +86,12 @@ class AppLocalizations {
     'show_translate_all_messages_button':
         'Title bar translate all messages button',
     'reload_active_tab': 'Reload active tab',
+    'notifications': 'Notifications',
+    'translate_notifications': 'Translate notification messages',
+    'show_translate_notification_button':
+        'Show translate button in notifications',
+    'notification_button_info':
+        'Will cause the notification auto-dismiss period to be longer.',
   };
 
   String get(String key, {Map<String, String>? args}) {

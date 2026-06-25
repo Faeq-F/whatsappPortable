@@ -115,136 +115,90 @@ String notificationOverrideJS = """
   if (window.__notificationOverrideInstalled) return;
   window.__notificationOverrideInstalled = true;
 
-  // Keep a reference to the native browser Notification constructor
-  const NativeNotification = window.Notification;
-  window.activeNotifications = new Set();
+  window.activeCustomNotifications = {};
 
   function CustomNotification(title, options) {
     var self = this;
     this.title = title;
     this.options = options || {};
     this.id = Math.random().toString(36).substring(2, 9);
-    window.activeNotifications.add(this.id);
+    window.activeCustomNotifications[this.id] = this;
 
-    // Create the native notification to show the desktop popup
-    let native = null;
-    if (NativeNotification) {
-      try {
-        native = new NativeNotification(title, options);
-      } catch (e) {
-        console.error("Failed to create native notification:", e);
-      }
-    }
+    this._listeners = {};
 
     try {
       NotificationChannel.postMessage(JSON.stringify({
         type: 'NOTIFICATION_RECEIVED',
         id: this.id,
         title: this.title,
-        body: this.options.body || '',
-        remainingCount: window.activeNotifications.size
+        body: this.options.body || ''
       }));
     } catch(e) {}
 
     this.close = function() {
-      if (window.activeNotifications.has(self.id)) {
-        window.activeNotifications.delete(self.id);
-        if (native && typeof native.close === 'function') {
-          try {
-            native.close();
-          } catch(e) {}
-        }
+      if (window.activeCustomNotifications[self.id]) {
+        delete window.activeCustomNotifications[self.id];
         try {
           NotificationChannel.postMessage(JSON.stringify({
             type: 'NOTIFICATION_CLOSED',
-            id: self.id,
-            remainingCount: window.activeNotifications.size
+            id: self.id
           }));
         } catch(e) {}
       }
     };
 
-    // Forward standard properties and events to the native instance
-    if (native) {
-      Object.defineProperty(this, 'onclick', {
-        get: function() { return native.onclick; },
-        set: function(val) {
-          native.onclick = function() {
-            try {
-              NotificationChannel.postMessage(JSON.stringify({
-                type: 'NOTIFICATION_CLICKED',
-                id: self.id
-              }));
-            } catch(e) {}
-            if (typeof val === 'function') val.apply(this, arguments);
-          };
-        }
-      });
-      Object.defineProperty(this, 'onclose', {
-        get: function() { return native.onclose; },
-        set: function(val) {
-          native.onclose = function() {
-            self.close(); // Clean up tracker on close
-            if (typeof val === 'function') val.apply(this, arguments);
-          };
-        }
-      });
-      Object.defineProperty(this, 'onerror', {
-        get: function() { return native.onerror; },
-        set: function(val) { native.onerror = val; }
-      });
-      Object.defineProperty(this, 'onshow', {
-        get: function() { return native.onshow; },
-        set: function(val) { native.onshow = val; }
-      });
-    }
-
     this.addEventListener = function(event, callback) {
-      if (native && typeof native.addEventListener === 'function') {
-        try {
-          if (event === 'click') {
-            native.addEventListener('click', function() {
-              try {
-                NotificationChannel.postMessage(JSON.stringify({
-                  type: 'NOTIFICATION_CLICKED',
-                  id: self.id
-                }));
-              } catch(e) {}
-              if (typeof callback === 'function') callback.apply(this, arguments);
-            });
-          } else {
-            native.addEventListener(event, callback);
-          }
-        } catch(e) {}
+      if (!self._listeners[event]) {
+        self._listeners[event] = [];
       }
-      if (event === 'close') {
-        var originalClose = self.close;
-        self.close = function() {
-          originalClose.call(self);
-          callback();
-        };
+      self._listeners[event].push(callback);
+    };
+
+    this.removeEventListener = function(event, callback) {
+      if (self._listeners[event]) {
+        const idx = self._listeners[event].indexOf(callback);
+        if (idx !== -1) {
+          self._listeners[event].splice(idx, 1);
+        }
       }
     };
   }
 
   // Inherit static properties and requestPermission
-  if (NativeNotification) {
-    CustomNotification.permission = NativeNotification.permission;
-    CustomNotification.requestPermission = function(callback) {
-      var result = NativeNotification.requestPermission(callback);
-      if (result && typeof result.then === 'function') {
-        return result;
-      }
-      return Promise.resolve(CustomNotification.permission);
-    };
-  } else {
-    CustomNotification.permission = 'granted';
-    CustomNotification.requestPermission = function() {
-      return Promise.resolve('granted');
-    };
-  }
+  CustomNotification.permission = 'granted';
+  CustomNotification.requestPermission = function(callback) {
+    if (typeof callback === 'function') callback('granted');
+    return Promise.resolve('granted');
+  };
 
   window.Notification = CustomNotification;
+
+  window.onNotificationClicked = function(id) {
+    const notification = window.activeCustomNotifications[id];
+    if (notification) {
+      if (typeof notification.onclick === 'function') {
+        notification.onclick();
+      }
+      const listeners = notification._listeners['click'] || [];
+      listeners.forEach(cb => {
+        try { cb(); } catch(e) {}
+      });
+    }
+  };
+
+  window.onNotificationClosedFromServer = function(id) {
+    const notification = window.activeCustomNotifications[id];
+    if (notification) {
+      if (typeof notification.onclose === 'function') {
+        notification.onclose();
+      }
+      const listeners = notification._listeners['close'] || [];
+      listeners.forEach(cb => {
+        try { cb(); } catch(e) {}
+      });
+      delete window.activeCustomNotifications[id];
+    }
+  };
 })();
 """;
 String getTranslationJS(String targetLangCode, String targetLangName,

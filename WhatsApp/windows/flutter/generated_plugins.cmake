@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   flutter_platform_alert
   fullscreen_window
+  local_notifier
   screen_retriever
   tray_manager
   url_launcher_windows

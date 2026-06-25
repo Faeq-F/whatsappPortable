@@ -7,5 +7,7 @@
     "keepAppInEnglish": true,
     "fullPageTranslation": false,
     "showTranslateAllMessagesButton": false,
-    "translateMessageButton": false
+    "translateMessageButton": false,
+    "translateNotifications": false,
+    "showTranslateNotificationButton": false
 }

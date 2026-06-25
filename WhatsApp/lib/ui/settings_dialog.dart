@@ -269,6 +269,77 @@ class _SettingsDialogState extends State<SettingsDialog> {
                       ],
                     ),
                   ),
+                  const Divider(height: 1),
+                  _SectionHeader(icon: Icons.notifications_none, title: loc.get('notifications')),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: Row(
+                      children: [
+                        Checkbox(
+                          value: widget.settingsController.translateNotifications,
+                          onChanged: (value) {
+                            if (value != null) {
+                              widget.settingsController.updateTranslateNotifications(value);
+                            }
+                          },
+                        ),
+                        Expanded(child: Text(loc.get('translate_notifications'))),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: Row(
+                      children: [
+                        Checkbox(
+                          value: widget.settingsController.showTranslateNotificationButton,
+                          onChanged: widget.settingsController.translateNotifications
+                              ? null
+                              : (value) {
+                                  if (value != null) {
+                                    widget.settingsController.updateShowTranslateNotificationButton(value);
+                                  }
+                                },
+                        ),
+                        Expanded(
+                          child: Text(
+                            loc.get('show_translate_notification_button'),
+                            style: TextStyle(
+                              color: widget.settingsController.translateNotifications
+                                  ? Theme.of(context).disabledColor
+                                  : null,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          size: 14,
+                          color: widget.settingsController.translateNotifications
+                              ? Theme.of(context).disabledColor
+                              : Theme.of(context).hintColor,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            loc.get('notification_button_info'),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: widget.settingsController.translateNotifications
+                                  ? Theme.of(context).disabledColor
+                                  : Theme.of(context).hintColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   const Divider(height: 1),
                   _SectionHeader(
