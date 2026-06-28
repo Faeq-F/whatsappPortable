@@ -18,9 +18,8 @@ The [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webv
 
 ### Screenshots:
 
-| | |
-| :---: | :---: |
 | ![App Screenshot in light mode](https://raw.githubusercontent.com/Faeq-F/whatsappPortable/main/docs/WhatsappPortable.png) | ![App Screenshot in dark mode](https://raw.githubusercontent.com/Faeq-F/whatsappPortable/main/docs/WhatsappPortable-Dark.png) |
+| :---: | :---: |
 | Light mode | Dark mode |
 | ![App Screenshot when logging in](https://raw.githubusercontent.com/Faeq-F/whatsappPortable/main/docs/WhatsappPortable-Login.png) | ![App Screenshot - settings dialog showing multiple accounts](https://raw.githubusercontent.com/Faeq-F/whatsappPortable/main/docs/WhatsappPortable-MultipleAccounts.png) |
 | Logging in | Settings dialog with multiple accounts |

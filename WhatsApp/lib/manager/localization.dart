@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 
+const String _googleTranslateBaseUrl = 'https://translate.googleapis.com';
+
 class AppLanguages {
   static bool isRtl(String code) {
     const rtlCodes = {
@@ -24,7 +26,7 @@ class AppLanguages {
     final client = HttpClient();
     try {
       final uri = Uri.parse(
-          'https://translate.googleapis.com/translate_a/l?client=gtx&hl=en');
+          '$_googleTranslateBaseUrl/translate_a/l?client=gtx&hl=en');
       final request = await client.getUrl(uri);
       final response = await request.close();
       if (response.statusCode == 200) {
@@ -148,7 +150,7 @@ class AppLocalizations {
       HttpClient client, String text, String targetLang) async {
     try {
       final uri = Uri.parse(
-          'https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=$targetLang&dt=t&q=${Uri.encodeComponent(text)}');
+          '$_googleTranslateBaseUrl/translate_a/single?client=gtx&sl=auto&tl=$targetLang&dt=t&q=${Uri.encodeComponent(text)}');
       final request = await client.getUrl(uri);
       final response = await request.close();
       if (response.statusCode == 200) {
