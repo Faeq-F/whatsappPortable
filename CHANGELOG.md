@@ -7,13 +7,25 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 <br /><br />
 
-## [2.4.0] - 2026-
+## [2.4.0] - 2026-07-01
+### Added
+- Localization & translation
+  - Translation of app UI
+  - Full page translation (translates WhatsApp UI & chat messages)
+  - Translate message hover button
+  - Translate all messages button
+  - Notification translation
+  - Caching list of supported languages & UI text
 
-### Changes
-- Hid the "Get Whatsapp for Windows" link at the bottom of the chats list (was visible when logged in and a chat was open)
+### Changed
+- Hid the "Get WhatsApp for Windows" link at the bottom of the chats list (was visible when logged in and a chat was open)
+- Switched to using OS native notifications
 
 ### Fixed
 - Notifications only shown after restarting the app, after providing permissions
+- Profile data not deleted when the profile metadata was manually removed from the `settings.json` file
+
+<br /><br />
 
 ## [2.3.0] - 2026-06-20
 ### Added
@@ -67,6 +79,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [1.0.0] - 2024-07-04
 Version 1.0.0
 
+[2.4.0]: https://github.com/Faeq-F/whatsappPortable/compare/Version2.3.0...Version2.4.0
 [2.3.0]: https://github.com/Faeq-F/whatsappPortable/compare/Version2.2.0...Version2.3.0
 [2.2.0]: https://github.com/Faeq-F/whatsappPortable/compare/Version2.1.0...Version2.2.0
 [2.1.0]: https://github.com/Faeq-F/whatsappPortable/compare/Version2.0.0...Version2.1.0

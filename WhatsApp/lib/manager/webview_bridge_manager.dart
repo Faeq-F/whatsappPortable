@@ -85,8 +85,17 @@ class WebviewBridgeManager {
                 "if (window.onBatchTranslationReceived) { window.onBatchTranslationReceived('${payload.id}', $partsJson, true); }");
           } else {
             final text = payload.text ?? '';
-            final result =
-                await AppLocalizations.translateSingle(text, payload.targetLang);
+            final String result;
+            if (payload.quotedText != null) {
+              final translatedQuoted = await AppLocalizations.translateSingle(payload.quotedText!, payload.targetLang);
+              final translatedResponse = await AppLocalizations.translateSingle(text, payload.targetLang);
+              result = jsonEncode({
+                'quoted': translatedQuoted,
+                'response': translatedResponse,
+              });
+            } else {
+              result = await AppLocalizations.translateSingle(text, payload.targetLang);
+            }
             final jsonResult = jsonEncode(result);
 
             await controller.runJavaScript(

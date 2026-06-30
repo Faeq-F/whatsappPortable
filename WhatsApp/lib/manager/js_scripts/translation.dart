@@ -67,8 +67,7 @@ class TranslationJsScripts {
         evt.stopPropagation();
         evt.preventDefault();
         
-        const selectableText = bubble.querySelector('.selectable-text');
-        let textToTranslate = selectableText ? selectableText.innerText : bubble.innerText;
+        let textToTranslate = getMessageText(bubble);
         if (textToTranslate) {
           textToTranslate = textToTranslate.trim();
           textToTranslate = textToTranslate.replace(/\\s*\\d{1,2}:\\d{2}\\s*(?:AM|PM|am|pm)?\\s*\$/g, '');
@@ -86,6 +85,9 @@ class TranslationJsScripts {
   function performTranslation(text, container) {
     const existing = container.querySelector('.custom-translation-bubble');
     if (existing) existing.remove();
+
+    const quotedNode = container.querySelector('[data-testid="quoted-message"] .selectable-text, .quoted-message .selectable-text');
+    const quotedText = quotedNode ? quotedNode.innerText.trim() : null;
 
     const transId = 'trans_' + Math.random().toString(36).substring(2, 9);
 
@@ -143,6 +145,7 @@ class TranslationJsScripts {
       TranslationChannel.postMessage(JSON.stringify({
         id: transId,
         text: text,
+        quotedText: quotedText,
         targetLang: targetLang
       }));
     } catch(e) {
@@ -157,8 +160,7 @@ class TranslationJsScripts {
     bubbles.forEach(bubble => {
       if (bubble.closest('.custom-translation-bubble')) return;
       
-      const selectableText = bubble.querySelector('.selectable-text');
-      const text = selectableText ? selectableText.innerText : bubble.innerText;
+      const text = getMessageText(bubble);
       if (text) {
         let cleanText = text.trim();
         cleanText = cleanText.replace(/\\s*\\d{1,2}:\\d{2}\\s*(?:AM|PM|am|pm)?\\s*\$/g, '');
@@ -283,7 +285,33 @@ class TranslationJsScripts {
       const bodyText = bubble.querySelector('.translation-body-text');
       if (bodyText) {
         bodyText.className = 'translation-body-text';
-        bodyText.innerText = isSuccess ? translatedText : 'Translation failed';
+        if (isSuccess) {
+          if (translatedText.startsWith('{')) {
+            try {
+              const data = JSON.parse(translatedText);
+              let quotedElement = bubble.querySelector('.quoted-translation');
+              if (!quotedElement) {
+                quotedElement = document.createElement('div');
+                quotedElement.className = 'quoted-translation';
+                quotedElement.style.borderLeft = '2px solid #8696a0';
+                quotedElement.style.paddingLeft = '6px';
+                quotedElement.style.color = '#8696a0';
+                quotedElement.style.fontSize = '11.5px';
+                quotedElement.style.marginBottom = '6px';
+                quotedElement.style.fontStyle = 'italic';
+                bodyText.parentNode.insertBefore(quotedElement, bodyText);
+              }
+              quotedElement.innerText = data.quoted;
+              bodyText.innerText = data.response;
+            } catch(e) {
+              bodyText.innerText = translatedText;
+            }
+          } else {
+            bodyText.innerText = translatedText;
+          }
+        } else {
+          bodyText.innerText = 'Translation failed';
+        }
       }
     }
   };
@@ -307,6 +335,18 @@ class TranslationJsScripts {
     return;
   }
   window.__translationOverrideInstalled = true;
+
+  function getMessageText(bubble) {
+    const nodes = bubble.querySelectorAll('.selectable-text');
+    for (let node of nodes) {
+      if (node.closest('[data-testid="quoted-message"]') || node.closest('.quoted-message')) {
+        continue;
+      }
+      return node.innerText;
+    }
+    if (nodes.length > 0) return nodes[nodes.length - 1].innerText;
+    return bubble.innerText;
+  }
 
   window.__translationTargetLangCode = '$targetLangCode';
   window.__translationTargetLangName = '$escapedName';

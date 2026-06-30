@@ -8,6 +8,7 @@ class JsTranslationPayload implements JsPayload {
   final String? type;
   final String? text;
   final List<String>? texts;
+  final String? quotedText;
 
   JsTranslationPayload({
     required this.id,
@@ -15,6 +16,7 @@ class JsTranslationPayload implements JsPayload {
     this.type,
     this.text,
     this.texts,
+    this.quotedText,
   });
 
   factory JsTranslationPayload.fromJson(String jsonStr) {
@@ -30,6 +32,7 @@ class JsTranslationPayload implements JsPayload {
     final type = map['type'] as String?;
     final text = map['text'] as String?;
     final textsList = map['texts'] as List?;
+    final quotedText = map['quotedText'] as String?;
     
     List<String>? texts;
     if (textsList != null) {
@@ -42,6 +45,7 @@ class JsTranslationPayload implements JsPayload {
       type: type,
       text: text,
       texts: texts,
+      quotedText: quotedText,
     );
   }
 }

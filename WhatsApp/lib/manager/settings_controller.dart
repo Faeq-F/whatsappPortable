@@ -232,6 +232,15 @@ class SettingsController with ChangeNotifier {
     if (newLanguage == 'en' || _keepAppInEnglish) {
       _localizations = AppLocalizations(AppLocalizations.enStrings);
       notifyListeners();
+    } else if (_cachedTranslations.containsKey(newLanguage)) {
+      final cached = _cachedTranslations[newLanguage]!;
+      final hasAllKeys = AppLocalizations.enStrings.keys.every((key) => cached.containsKey(key));
+      if (hasAllKeys) {
+        _localizations = AppLocalizations(cached);
+        notifyListeners();
+      } else {
+        await _loadTranslationsAsync(newLanguage);
+      }
     } else {
       await _loadTranslationsAsync(newLanguage);
     }
@@ -280,6 +289,14 @@ class SettingsController with ChangeNotifier {
     } else {
       if (_language == 'en') {
         _localizations = AppLocalizations(AppLocalizations.enStrings);
+      } else if (_cachedTranslations.containsKey(_language)) {
+        final cached = _cachedTranslations[_language]!;
+        final hasAllKeys = AppLocalizations.enStrings.keys.every((key) => cached.containsKey(key));
+        if (hasAllKeys) {
+          _localizations = AppLocalizations(cached);
+        } else {
+          await _loadTranslationsAsync(_language);
+        }
       } else {
         await _loadTranslationsAsync(_language);
       }
