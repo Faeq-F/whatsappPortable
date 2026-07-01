@@ -196,8 +196,19 @@ class TranslationJsScripts {
           if (tag !== 'script' && tag !== 'style' && tag !== 'noscript' && tag !== 'iframe') {
             const isWidget = node.classList && (node.classList.contains('custom-translate-hover-btn') || node.classList.contains('custom-translation-bubble'));
             if (!isWidget) {
-              for (let child = node.firstChild; child; child = child.nextSibling) {
-                walk(child);
+              const placeholder = node.getAttribute('placeholder');
+              const dataPlaceholder = node.getAttribute('data-placeholder');
+              if ((placeholder && placeholder.trim().length > 0) || (dataPlaceholder && dataPlaceholder.trim().length > 0)) {
+                if (!translatedNodes.has(node)) {
+                  batchNodes.push(node);
+                  batchTexts.push(((placeholder && placeholder.trim().length > 0) ? placeholder : dataPlaceholder).trim());
+                }
+              }
+              const isEditable = node.isContentEditable || node.getAttribute('contenteditable') === 'true';
+              if (!isEditable) {
+                for (let child = node.firstChild; child; child = child.nextSibling) {
+                  walk(child);
+                }
               }
             }
           }
@@ -266,11 +277,21 @@ class TranslationJsScripts {
     if (nodes && isSuccess && translatedTexts.length === nodes.length) {
       nodes.forEach((node, idx) => {
         if (node && translatedTexts[idx]) {
-          const original = node.nodeValue;
-          const leadingWs = original.match(/^\\s*/)[0];
-          const trailingWs = original.match(/\\s*\$/)[0];
-          node.nodeValue = leadingWs + translatedTexts[idx] + trailingWs;
-          translatedNodes.add(node);
+          if (node.nodeType === 3) {
+            const original = node.nodeValue;
+            const leadingWs = original.match(/^\\s*/)[0];
+            const trailingWs = original.match(/\\s*\$/)[0];
+            node.nodeValue = leadingWs + translatedTexts[idx] + trailingWs;
+            translatedNodes.add(node);
+          } else if (node.nodeType === 1) {
+            if (node.hasAttribute('placeholder')) {
+              node.setAttribute('placeholder', translatedTexts[idx]);
+            }
+            if (node.hasAttribute('data-placeholder')) {
+              node.setAttribute('data-placeholder', translatedTexts[idx]);
+            }
+            translatedNodes.add(node);
+          }
         }
       });
     }
