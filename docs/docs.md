@@ -61,6 +61,7 @@ The release build is generated in the following directory:
 ### 4.2. Portability Concept
 All user settings and active sessions are stored locally in the application folder:
 - **Settings**: Saved to `settings.json` in the current working directory.
+- **Translations Cache**: Saved to `translations_cache.json` in the current working directory.
 - **WebView2 User Profiles**: Saved to `data/webview/EBWebView/WV2Profile_<accountId>` in the current working directory.
 
 This allows the application folder to be moved (e.g., to a USB drive) while fully preserving the user's logged-in accounts and configuration.
@@ -95,3 +96,20 @@ To ensure Windows preserves the system attribute of both the `desktop.ini` file 
 
 ### 4.6. GitHub Release
  - Create the new release, adding the portable archive in the release assets.
+
+## 5. WebView Bridge & Localization Architecture
+The application implements a customized bridge to interface with WhatsApp Web. If you are developing or refactoring WebView behavior, keep the following structure in mind:
+
+### 5.1. JavaScript Injection & Overrides (`lib/manager/js_scripts/`)
+Scripts injected into the WebView2 instance are organized into modular domain files to keep the main code clean:
+- [theme.dart](../WhatsApp/lib/manager/js_scripts/theme.dart): Implements custom dark/light theme CSS injections.
+- [notification.dart](../WhatsApp/lib/manager/js_scripts/notification.dart): Injects listeners to intercept web notifications and forward them to the native Windows system.
+- [translation.dart](../WhatsApp/lib/manager/js_scripts/translation.dart): Implements page-wide DOM-scanning translations, the hover translate button, and translation bubble renderer. Excludes `contenteditable` nodes to prevent cursor resets while typing.
+
+### 5.2. Type-Safe WebView Communication
+All message data sent across WebView JavaScript Channels are serialized as JSON and parsed into structured Dart models at the boundary:
+- [webview_payload.dart](../WhatsApp/lib/model/webview_payload.dart): Implements `JsTranslationPayload` and `JsNotificationPayload` with validation checks.
+- [webview_bridge_manager.dart](../WhatsApp/lib/manager/webview_bridge_manager.dart): Encapsulates controller creation, channel registrations (`TranslationChannel`, `NotificationChannel`), permission grants, and request routing.
+
+### 5.3. Translation Proxying
+- [localization.dart](../WhatsApp/lib/manager/localization.dart): Manages network calls to the Google Translate API endpoint. Translation maps for UI strings are persisted in `translations_cache.json`.
