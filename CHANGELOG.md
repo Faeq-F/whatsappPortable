@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 <br /><br />
 
-## [2.4.0] - 2026-07-03
+## [2.4.0] - 2026-07-04
 ### Added
 - Localization & translation
   - Translation of app UI
