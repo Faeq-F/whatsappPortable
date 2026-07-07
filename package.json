@@ -1,0 +1,48 @@
+{
+  "name": "whatsappPortable-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build --preset github_pages",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@maz-ui/icons": "^4.7.0",
+    "@maz-ui/nuxt": "^4.7.2",
+    "@maz-ui/themes": "^4.7.1",
+    "@maz-ui/translations": "^4.7.0",
+    "@maz-ui/utils": "^4.7.0",
+    "@nuxt/content": "^3.5.1",
+    "@nuxt/eslint": "^1.4.1",
+    "@nuxt/fonts": "^0.11.4",
+    "@nuxt/icon": "^1.13.0",
+    "@nuxt/image": "^1.10.0",
+    "@nuxt/scripts": "^0.11.7",
+    "@nuxt/ui": "^3.1.2",
+    "@nuxtjs/device": "^4.0.0",
+    "@pinia/nuxt": "^0.11.0",
+    "@unhead/vue": "^2.0.10",
+    "better-sqlite3": "^12.2.0",
+    "caniuse-lite": "^1.0.30001761",
+    "eslint": "^9.27.0",
+    "fuse.js": "^7.1.0",
+    "gsap": "^3.13.0",
+    "lenis": "^1.3.4",
+    "markdown-it-link-attributes": "^4.0.1",
+    "maz-ui": "^4.0.0",
+    "md-editor-v3": "^5.7.1",
+    "nuxt": "^3.17.4",
+    "pinia": "^3.0.2",
+    "typescript": "^5.8.3",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vue": "^3.5.14",
+    "vue-router": "^4.5.1"
+  },
+  "devDependencies": {
+    "@iconify-json/lucide": "^1.2.50",
+    "prismjs": "^1.30.0"
+  }
+}

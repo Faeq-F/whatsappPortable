@@ -1,0 +1,23 @@
+# https://github.com/actions/deploy-pages#usage
+name: Deploy to GitHub Pages
+on:
+  workflow_dispatch:
+  push:
+    branches: [site]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: corepack enable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - run: npm install --legacy-peer-deps
+      - run: npx nuxt build --preset github_pages
+      - name: GitHub Pages 🚀
+        uses: JamesIves/github-pages-deploy-action@releases/v3
+        with:
+          ACCESS_TOKEN: ${{ secrets.CI }}
+          BRANCH: gh-pages
+          FOLDER: .output/public

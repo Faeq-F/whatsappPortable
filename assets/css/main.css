@@ -1,0 +1,84 @@
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap');
+@import "tailwindcss";
+@import "@nuxt/ui";
+@import "./maz-ui-variables.css";
+import 'maz-ui/styles'
+
+
+*{
+  
+}
+
+.light,
+:root {
+  --ui-bg: #FCF5EB;
+  --ui-text: #111B21;
+  --ui-border: #FCF5EB;
+  --ui-border-accented: #111B21;
+  --maz-border-color: #111B21;
+  --ui-bg-elevated: transparent;
+}
+
+.dark {
+  --ui-bg: #111B21;
+  --ui-text: #FCF5EB;
+  --ui-border: #111B21;
+  --ui-border-accented: #111B21;
+  --maz-border-color: #FCF5EB;
+}
+
+*{
+  transition: 200ms all;
+  scroll-behavior: smooth;
+}
+
+#navbar,
+body{
+  transition: 200ms all ease-in-out;
+}
+
+::selection {
+  background-color: #eeeeee !important;
+}
+
+.dark ::selection {
+  background-color: #142550 !important;
+}
+
+/* Scroll bar */
+
+  * {
+    scrollbar-color: gray transparent;
+    scrollbar-width: thin;
+  }
+
+/* Font classes */
+
+.outfit,
+.varela {
+    font-family: "Google Sans Flex", sans-serif;
+  font-optical-sizing: auto;
+  font-style: normal;
+  font-variation-settings:
+    "slnt" 0,
+    "wdth" 100,
+    "GRAD" 0,
+    "ROND" 0;
+}
+
+/* Dark-mode specific styles */
+
+.dark video,
+.dark img{
+  filter: brightness(0.8);
+}
+
+.dark img.dark\:invert-100{
+  filter: invert(100);
+}
+
+/* Overriding Maz-UI styles */
+
+.maz-elevation {
+  box-shadow: none !important;
+}
