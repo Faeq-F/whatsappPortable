@@ -1,1 +1,0 @@
-This branch contains the built assets for the website, automatically deployed to GitHub Pages.
