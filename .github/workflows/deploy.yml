@@ -18,7 +18,8 @@ jobs:
       - run: npm install --legacy-peer-deps
       - run: npx nuxt build --preset github_pages
       - name: GitHub Pages 🚀
-        uses: JamesIves/github-pages-deploy-action@v4
+        uses: JamesIves/github-pages-deploy-action@releases/v3
         with:
-          branch: gh-pages
-          folder: .output/public
+          ACCESS_TOKEN: ${{ secrets.CI }}
+          BRANCH: gh-pages
+          FOLDER: .output/public
