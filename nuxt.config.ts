@@ -5,7 +5,7 @@ export default defineNuxtConfig({
   ssr: false,
   app: {
     baseURL: "/whatsappPortable/",
-    buildAssetsDir: "assets",
+    // buildAssetsDir: "assets",
     head: {
       link: [{ rel: "icon", type: "image/ico", href: "/whatsappPortable/media/icon.ico" }],
       title: "WhatsApp Portable"
