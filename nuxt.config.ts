@@ -114,16 +114,5 @@ export default defineNuxtConfig({
       sizeLimitKb: 256,
     },
   },
-  hooks: {
-    'vite:extendConfig'(config) {
-      if (config.build?.rollupOptions) {
-        const input = config.build.rollupOptions.input
-        if (input && typeof input === 'object' && !Array.isArray(input)) {
-          if (input.entry && !input.server) {
-            input.server = input.entry
-          }
-        }
-      }
-    }
-  }
+
 });
