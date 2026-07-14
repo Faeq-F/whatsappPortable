@@ -46,14 +46,14 @@ class AccountManager with ChangeNotifier {
     }
 
     try {
-      _accounts = accountsData
+      final loadedAccounts = accountsData
           .map((accountData) => WhatsAppAccount.fromJson(accountData))
           .toList();
 
-      final activeIds = _accounts.map((a) => a.id).toList();
+      final activeIds = loadedAccounts.map((a) => a.id).toList();
       await _cleanupUnusedProfiles(activeIds);
 
-      for (var account in _accounts) {
+      for (var account in loadedAccounts) {
         account.initializeWebViewController();
         await account.ensureSharedDataDirectory();
         account.setupWebView(
@@ -61,6 +61,8 @@ class AccountManager with ChangeNotifier {
           onNotificationChanged: _onNotificationChanged,
         );
       }
+
+      _accounts = loadedAccounts;
 
       if (_currentAccount == null && _accounts.isNotEmpty) {
         _currentAccount = _accounts.firstWhere(

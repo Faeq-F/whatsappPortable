@@ -12,6 +12,9 @@ class SettingsController with ChangeNotifier {
   bool _alwaysShowTabBar = true;
   bool get alwaysShowTabBar => _alwaysShowTabBar;
 
+  bool _minimizeWindowOnStartup = false;
+  bool get minimizeWindowOnStartup => _minimizeWindowOnStartup;
+
   bool _checkForUpdates = true;
   bool get checkForUpdates => _checkForUpdates;
 
@@ -94,6 +97,7 @@ class SettingsController with ChangeNotifier {
     }
 
     _alwaysShowTabBar = settings['alwaysShowTabBar'] ?? true;
+    _minimizeWindowOnStartup = settings['minimizeWindowOnStartup'] ?? false;
     _checkForUpdates = settings['checkForUpdates'] ?? true;
     _translateMessageButton = settings['translateMessageButton'] ?? settings['enableHoverTranslation'] ?? true;
     _keepAppInEnglish = settings['keepAppInEnglish'] ?? settings['translateContentOnly'] ?? false;
@@ -259,6 +263,14 @@ class SettingsController with ChangeNotifier {
     settings['alwaysShowTabBar'] = value;
     await writeSettings(settings);
     _alwaysShowTabBar = value;
+    notifyListeners();
+  }
+
+  Future<void> updateMinimizeWindowOnStartup(bool value) async {
+    final settings = await readSettings();
+    settings['minimizeWindowOnStartup'] = value;
+    await writeSettings(settings);
+    _minimizeWindowOnStartup = value;
     notifyListeners();
   }
 

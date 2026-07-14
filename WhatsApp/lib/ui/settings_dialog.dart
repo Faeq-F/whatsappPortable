@@ -39,6 +39,29 @@ class _SettingsDialogState extends State<SettingsDialog> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _SectionHeader(
+                      icon: Icons.settings, title: loc.get('general')),
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      children: [
+                        Checkbox(
+                          value: widget.settingsController.minimizeWindowOnStartup,
+                          onChanged: (value) {
+                            if (value != null) {
+                              widget.settingsController
+                                  .updateMinimizeWindowOnStartup(value);
+                            }
+                          },
+                        ),
+                        Expanded(
+                          child: Text(loc.get('minimize_window_on_startup')),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  _SectionHeader(
                       icon: Icons.color_lens_outlined, title: loc.get('theme')),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -400,6 +423,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
                       ],
                     ),
                   ),
+
                   const Divider(height: 1),
                   _SectionHeader(icon: Icons.update, title: loc.get('updates')),
                   Padding(

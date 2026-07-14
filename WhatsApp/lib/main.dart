@@ -46,6 +46,11 @@ class _WhatsAppState extends State<WhatsApp> with TrayListener {
     createTrayTask();
     trayManager.addListener(this);
     widget.settingsController.addListener(_onSettingsChanged);
+    if (!widget.settingsController.minimizeWindowOnStartup) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await windowManager.show();
+      });
+    }
   }
 
   @override

@@ -1,4 +1,5 @@
 {
+    "minimizeWindowOnStartup": false,
     "theme": "ThemeMode.system",
     "alwaysShowTabBar": true,
     "checkForUpdates": true,

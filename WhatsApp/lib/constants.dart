@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-const String appVersion = '2.4.0';
+const String appVersion = '2.4.1';
 const String remoteVersionUrl =
     'https://raw.githubusercontent.com/Faeq-F/whatsappPortable/main/Version';
 const String repoReleasesUrl =

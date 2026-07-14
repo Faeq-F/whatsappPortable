@@ -58,6 +58,7 @@ class AppLocalizations {
 
   static const Map<String, String> enStrings = {
     'settings': 'Settings',
+    'general': 'General',
     'theme': 'Theme',
     'system': 'System',
     'light': 'Light',
@@ -66,6 +67,7 @@ class AppLocalizations {
     'manage_accounts': 'Manage Accounts',
     'add_account': 'Add account',
     'always_show_tab_bar': 'Always show tab bar',
+    'minimize_window_on_startup': 'Minimize window on startup',
     'updates': 'Updates',
     'check_updates_launch': 'Check for updates on launch',
     'check_now': 'Check Now',
