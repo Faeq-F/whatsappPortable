@@ -7,14 +7,20 @@ export default defineNuxtConfig({
     baseURL: "/whatsappPortable/",
     buildAssetsDir: "assets",
     head: {
-      link: [{ rel: "icon", type: "image/ico", href: "/whatsappPortable/media/icon.ico" }],
-      title: "WhatsApp Portable"
+      link: [
+        {
+          rel: "icon",
+          type: "image/ico",
+          href: "/whatsappPortable/media/icon.ico",
+        },
+      ],
+      title: "WhatsApp Portable",
     },
-    pageTransition: { name: 'page', mode: 'out-in' }
+    pageTransition: { name: "page", mode: "out-in" },
   },
   router: {
     options: {
-      scrollBehaviorType: "smooth"
+      scrollBehaviorType: "smooth",
     },
   },
   nitro: {
@@ -24,27 +30,25 @@ export default defineNuxtConfig({
   },
   vite: {
     optimizeDeps: {
-      include: ['maz-ui', '@maz-ui/nuxt'],
+      include: ["maz-ui", "@maz-ui/nuxt"],
       esbuildOptions: {
         supported: {
-          'top-level-await': true,
+          "top-level-await": true,
         },
       },
     },
     esbuild: {
       supported: {
-        'top-level-await': true,
+        "top-level-await": true,
       },
-    }
+    },
   },
   vue: {
     compilerOptions: {
-      whitespace: 'preserve'
-    }
+      whitespace: "preserve",
+    },
   },
-  css: [
-    "~/assets/css/main.css"
-  ],
+  css: ["~/assets/css/main.css"],
   modules: [
     "lenis/nuxt",
     "@maz-ui/nuxt",
@@ -56,43 +60,43 @@ export default defineNuxtConfig({
     "@nuxt/scripts",
     "@nuxt/ui",
     "@pinia/nuxt",
-    '@nuxtjs/device',
+    "@nuxtjs/device",
   ],
   mazUi: {
     theme: {
-      preset: 'maz-ui',
+      preset: "maz-ui",
       overrides: {
         colors: {
           light: {
-            primary: '142 70% 49%',
-            secondary: '272 99% 54%',
-            info: '188 78% 41%',
-            success: '80 61% 50%',
-            warning: '40 97% 59%',
-            destructive: '1 100% 71%',
-            muted: '0 0% 54%',
-            accent: '272 99% 54%',
-            contrast: '0 0% 85%',
+            primary: "142 70% 49%",
+            secondary: "272 99% 54%",
+            info: "188 78% 41%",
+            success: "80 61% 50%",
+            warning: "40 97% 59%",
+            destructive: "1 100% 71%",
+            muted: "0 0% 54%",
+            accent: "272 99% 54%",
+            contrast: "0 0% 85%",
           },
           dark: {
-            primary: '142 70% 49%',
-            secondary: '272 99% 54%',
-            info: '188 78% 41%',
-            success: '80 61% 50%',
-            warning: '40 97% 59%',
-            destructive: '1 100% 71%',
-            muted: '255 0% 54%',
-            accent: '272 99% 54%',
-            contrast: '210 8% 14%',
+            primary: "142 70% 49%",
+            secondary: "272 99% 54%",
+            info: "188 78% 41%",
+            success: "80 61% 50%",
+            warning: "40 97% 59%",
+            destructive: "1 100% 71%",
+            muted: "255 0% 54%",
+            accent: "272 99% 54%",
+            contrast: "210 8% 14%",
           },
         },
       },
-      strategy: 'hybrid',
-      darkModeStrategy: 'class',
+      strategy: "hybrid",
+      darkModeStrategy: "class",
     },
     translations: {
-      locale: 'en',
-      fallbackLocale: 'en',
+      locale: "en",
+      fallbackLocale: "en",
     },
     plugins: {
       aos: true,
@@ -114,5 +118,16 @@ export default defineNuxtConfig({
       sizeLimitKb: 256,
     },
   },
-
+  hooks: {
+    "vite:extendConfig"(config) {
+      if (process.versions.bun && config.build?.rollupOptions) {
+        const input = config.build.rollupOptions.input;
+        if (input && typeof input === "object" && !Array.isArray(input)) {
+          if (input.entry && !input.server) {
+            input.server = input.entry;
+          }
+        }
+      }
+    },
+  },
 });

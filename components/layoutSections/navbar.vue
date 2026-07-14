@@ -1,29 +1,29 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from "@nuxt/ui";
 import { ref } from "vue";
-import { useFetch } from "nuxt/app";
+// import { useFetch } from "nuxt/app";
 
-let githubStars;
+//let githubStars;
 let rightItems;
 
-useFetch("https://api.github.com/repos/faeq-f/whatsappPortable/stargazers")
-  .then((data) => {
-    githubStars = Intl.NumberFormat("en-US", {
-      notation: "compact",
-      maximumFractionDigits: 1,
-    })
-      .format([...data.data.value].length)
-      .toString();
-  })
-  .catch(() => {
-    githubStars = "";
-  });
+// useFetch("https://api.github.com/repos/faeq-f/whatsappPortable/stargazers")
+//   .then((data) => {
+//     githubStars = Intl.NumberFormat("en-US", {
+//       notation: "compact",
+//       maximumFractionDigits: 1,
+//     })
+//       .format([...data.data.value].length)
+//       .toString();
+//   })
+//   .catch(() => {
+//     githubStars = "";
+//   });
 rightItems = ref<NavigationMenuItem[][]>([
   [
     {
       label: "GitHub",
       icon: "i-lucide-github",
-      badge: githubStars,
+      // badge: githubStars,
       to: "https://github.com/faeq-f/whatsappPortable/",
       target: "_blank",
     },

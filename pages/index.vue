@@ -52,7 +52,7 @@ const prev = () => {
         <MazAnimatedElement direction="up" :delay="900" :duration="700">
           <div class="my-4 flex justify-center sm:justify-start">
             <a
-              href="https://github.com/Faeq-F/whatsappPortable/releases/download/Version2.4.0/WhatsApp.zip"
+              href="https://github.com/Faeq-F/whatsappPortable/releases/download/Version2.4.1/WhatsApp.zip"
               target="_blank"
               class="inline-flex items-center gap-2.5 border border-black cursor-pointer! px-6 py-3 bg-[#25d366] active:bg-[#1ca34d] text-[#111B21] rounded-full transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-0.5"
             >
